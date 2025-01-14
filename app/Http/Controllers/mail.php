@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
-class MailDataController extends Controller
+class MailController extends Controller
 {
     public function processData($status='', $encrypt='')
     {
