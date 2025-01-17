@@ -402,15 +402,15 @@ class StaffActionController extends Controller
         $folder_name = $request->folder_name;
 
         // Connect to FTP server
-        $ftp_server = "172.17.0.5";
-        $ftp_conn = ftp_connect($ftp_server) or die("Could not connect to $ftp_server");
+        $ftp_server = "10.112.1.212";
+        $ftp_conn = ftp_connect($ftp_server, 2121) or die("Could not connect to $ftp_server");
 
         // Log in to FTP server
-        $ftp_user_name = "ifca_test";
-        $ftp_user_pass = "@Serangan1212";
+        $ftp_user_name = "ifca";
+        $ftp_user_pass = "3pGRCPdEBXa72NWc";
         $login = ftp_login($ftp_conn, $ftp_user_name, $ftp_user_pass);
 
-        $file = "ifca-att/".$folder_name."/".$file_name;
+        $file = "public/ifca-att/".$folder_name."/".$file_name;
 
         if (ftp_size($ftp_conn, $file) > 0) {
             echo "Ada File";
