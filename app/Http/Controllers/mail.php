@@ -47,7 +47,7 @@ class MailController extends Controller
             'module'        => $data["type_module"],
         );
 
-        $query = DB::connection('BTID')
+        $query = DB::connection('matahari')
         ->table('mgr.cb_cash_request_appr')
         ->where($where)
         ->whereIn('status', ["A", "R", "C"])
@@ -77,7 +77,7 @@ class MailController extends Controller
                 'module'        => $data["type_module"],
             );
     
-            $query2 = DB::connection('BTID')
+            $query2 = DB::connection('matahari')
             ->table('mgr.cb_cash_request_appr')
             ->where($where2)
             ->get();

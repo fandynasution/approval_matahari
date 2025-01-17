@@ -167,7 +167,7 @@ class PoRequestController extends Controller
             $descstatus = "Cancelled";
             $imagestatus = "reject.png";
         }
-        $pdo = DB::connection('BTID')->getPdo();
+        $pdo = DB::connection('matahari')->getPdo();
         $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.x_send_mail_approval_po_request ?, ?, ?, ?, ?, ?, ?, ?, ?;");
         $sth->bindParam(1, $data["entity_cd"]);
         $sth->bindParam(2, $data["project_no"]);

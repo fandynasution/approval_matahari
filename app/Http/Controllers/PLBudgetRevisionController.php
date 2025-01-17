@@ -167,7 +167,7 @@ class PLBudgetRevisionController extends Controller
             'module'        => $data["type_module"],
         );
 
-        $query = DB::connection('BTID')
+        $query = DB::connection('matahari')
         ->table('mgr.cb_cash_request_appr')
         ->where($where)
         ->whereIn('status', array("A", "R", "C"))
@@ -199,7 +199,7 @@ class PLBudgetRevisionController extends Controller
                 'module'        => $data["type_module"],
             );
 
-            $query2 = DB::connection('BTID')
+            $query2 = DB::connection('matahari')
             ->table('mgr.cb_cash_request_appr')
             ->where($where2)
             ->get();
@@ -285,7 +285,7 @@ class PLBudgetRevisionController extends Controller
             $descstatus = "Cancelled";
             $imagestatus = "reject.png";
         }
-        $pdo = DB::connection('BTID')->getPdo();
+        $pdo = DB::connection('matahari')->getPdo();
         $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_pl_budget_revision ?, ?, ?, ?, ?, ?, ?;");
         $sth->bindParam(1, $data["entity_cd"]);
         $sth->bindParam(2, $data["project_no"]);
