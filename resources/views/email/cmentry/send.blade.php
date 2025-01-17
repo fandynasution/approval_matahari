@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta http-equiv="Content-Type" content="application/pdf">
     <meta name="x-apple-disable-message-reformatting">
-    <title>IFCA - BTID</title>
+    <title>IFCA - Matahari Land</title>
     <link rel="shortcut icon" type="image/x-icon" href="{{ url('public/images/KuraKuraBali-iconew.ico') }}">
     
     <style>
