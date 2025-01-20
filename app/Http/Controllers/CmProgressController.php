@@ -85,7 +85,7 @@ class CmProgressController extends Controller
             'usergroup'     => $request->usergroup,
             'user_id'       => $request->user_id,
             'supervisor'    => $request->supervisor,
-            'type'          => 'A',
+            'type'          => 'F',
             'type_module'   => 'CM',
             'text'          => 'Contract Progress'
         );
