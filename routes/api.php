@@ -118,3 +118,12 @@ Route::POST('/budgetrevision/getaccess', [PLBudgetRevision::class, 'update']);
 use App\Http\Controllers\FeedbackPLController as FeedbackPL;
 Route::POST('/feedbackbudgetlyman', [FeedbackPL::class, 'feedbackbudgetlyman']);
 Route::POST('/feedbackbudgetrevision', [FeedbackPL::class, 'feedbackbudgetrevision']);
+
+use App\Http\Controllers\LandSubmissionController as LandSubmission;
+
+Route::POST('/landsubmission', [LandSubmission::class, 'mail']);
+Route::POST('/landsubmission/update', [LandSubmission::class, 'update']);
+Route::GET('/landsubmission/{status}/{entity_cd}/{doc_no}/{level_no}', [LandSubmission::class, 'changestatus']);
+
+use App\Http\Controllers\FeedbackLandSubmissionController as FeedbackSubmission;
+Route::POST('/feedbacksubmission', [FeedbackSubmission::class, 'Mail']);
