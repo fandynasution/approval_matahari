@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use App\Mail\SendCmProgressMail;
+use App\Mail\SendCmProgresswuMail;
 use PDO;
 use DateTime;
 
-class CmProgressController extends Controller
+class CmProgresswuController extends Controller
 {
     public function Mail(Request $request)
     {
@@ -85,7 +85,7 @@ class CmProgressController extends Controller
             'usergroup'     => $request->usergroup,
             'user_id'       => $request->user_id,
             'supervisor'    => $request->supervisor,
-            'type'          => 'A',
+            'type'          => 'F',
             'type_module'   => 'CM',
             'text'          => 'Contract Progress'
         );
@@ -110,7 +110,7 @@ class CmProgressController extends Controller
 
                 // Check if the email has been sent before for this document
                 $cacheFile = 'email_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
-                $cacheFilePath = storage_path('app/mail_cache/send_cmprogress/' . date('Ymd') . '/' . $cacheFile);
+                $cacheFilePath = storage_path('app/mail_cache/send_cmprogresswu/' . date('Ymd') . '/' . $cacheFile);
                 $cacheDirectory = dirname($cacheFilePath);
 
                 // Ensure the directory exists
@@ -132,7 +132,7 @@ class CmProgressController extends Controller
                     $mail = Mail::to($email);
 
                     // Send email
-                    $mail->send(new SendCmProgressMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+                    $mail->send(new SendCmProgresswuMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
@@ -264,7 +264,7 @@ class CmProgressController extends Controller
                 ];
                 Artisan::call('config:cache');
                 Artisan::call('cache:clear');
-                return view('email/cmprogress/passcheckwithremark', $data);
+                return view('email/cmprogresswu/passcheckwithremark', $data);
             }
         }
     }
@@ -303,7 +303,7 @@ class CmProgressController extends Controller
             $imagestatus = "reject.png";
         }
         $pdo = DB::connection('matahari')->getPdo();
-        $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_cm_progress ?, ?, ?, ?, ?, ?, ?, ?, ?, ?;");
+        $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_cm_progress_with_unit ?, ?, ?, ?, ?, ?, ?, ?, ?, ?;");
         $sth->bindParam(1, $data["entity_cd"]);
         $sth->bindParam(2, $data["project_no"]);
         $sth->bindParam(3, $data["doc_no"]);
