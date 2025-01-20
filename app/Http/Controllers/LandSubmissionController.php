@@ -213,7 +213,7 @@ class LandSubmissionController extends Controller
                 'valuebt'       => $valuebt
             );
         }
-        return view('emails/landsubmission/action', $data);
+        return view('email/landsubmission/action', $data);
     }
 
     public function update(Request $request)
@@ -290,7 +290,7 @@ class LandSubmissionController extends Controller
             "image" => $image,
             "notif" => $notif
         );
-        return view("emails.after", $msg1);
+        return view("email.after", $msg1);
     }
 
 }
