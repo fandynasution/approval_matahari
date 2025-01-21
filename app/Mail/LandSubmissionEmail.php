@@ -34,7 +34,7 @@ class LandSubmissionEmail extends Mailable
     public function build()
     {
         return $this->subject('Need Approval '.$this->mailData['descs'])
-                    ->view('emails.landsubmission.send')
+                    ->view('email.landsubmission.send')
                     ->with([
                         'data' => $this->mailData
                     ]);
