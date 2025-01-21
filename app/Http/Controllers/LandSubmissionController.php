@@ -115,7 +115,7 @@ class LandSubmissionController extends Controller
 
         try {
             $emailAddress = strtolower($request->email_addr);
-            $approve_seq = $request->approve_seq;
+            $approve_seq = $request->approved_seq;
             $entity_cd = $request->entity_cd;
             $doc_no = $request->doc_no;
             $level_no = $request->level_no;
@@ -123,7 +123,7 @@ class LandSubmissionController extends Controller
 
             if (!empty($emailAddress)) {
                 // Check if the email has been sent before for this document
-                $cacheFile = 'email_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
+                $cacheFile = 'email_sent_' . $approved_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
                 $cacheFilePath = storage_path('app/mail_cache/send_lm_submission/' . date('Ymd') . '/' . $cacheFile);
                 $cacheDirectory = dirname($cacheFilePath);
 
