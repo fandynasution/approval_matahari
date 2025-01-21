@@ -69,8 +69,7 @@ class LandSubmissionController extends Controller
         foreach ($list_of_approve_date as $approve_date) {
             $approve_date_data[] = $approve_date;
         }
-
-        var_dump($request_amt_data);
+        
 
         $dataArray = array(
             'entity_cd'         => $request->entity_cd,
@@ -113,59 +112,59 @@ class LandSubmissionController extends Controller
         // Melakukan enkripsi pada $dataArray
         $encryptedData = Crypt::encrypt($data2Encrypt);
 
-        // try {
-        //     $emailAddress = strtolower($request->email_addr);
-        //     $approved_seq = $request->approved_seq;
-        //     $entity_cd = $request->entity_cd;
-        //     $doc_no = $request->doc_no;
-        //     $level_no = $request->level_no;
-        //     $entity_name = $request->entity_name;
+        try {
+            $emailAddress = strtolower($request->email_addr);
+            $approved_seq = $request->approved_seq;
+            $entity_cd = $request->entity_cd;
+            $doc_no = $request->doc_no;
+            $level_no = $request->level_no;
+            $entity_name = $request->entity_name;
 
-        //     if (!empty($emailAddress)) {
-        //         // Check if the email has been sent before for this document
-        //         $cacheFile = 'email_sent_' . $approved_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
-        //         $cacheFilePath = storage_path('app/mail_cache/send_lm_submission/' . date('Ymd') . '/' . $cacheFile);
-        //         $cacheDirectory = dirname($cacheFilePath);
+            if (!empty($emailAddress)) {
+                // Check if the email has been sent before for this document
+                $cacheFile = 'email_sent_' . $approved_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
+                $cacheFilePath = storage_path('app/mail_cache/send_lm_submission/' . date('Ymd') . '/' . $cacheFile);
+                $cacheDirectory = dirname($cacheFilePath);
 
-        //         // Ensure the directory exists
-        //         if (!file_exists($cacheDirectory)) {
-        //             mkdir($cacheDirectory, 0755, true);
-        //         }
+                // Ensure the directory exists
+                if (!file_exists($cacheDirectory)) {
+                    mkdir($cacheDirectory, 0755, true);
+                }
 
-        //         // Acquire an exclusive lock
-        //         $lockFile = $cacheFilePath . '.lock';
-        //         $lockHandle = fopen($lockFile, 'w');
-        //         if (!flock($lockHandle, LOCK_EX)) {
-        //             // Failed to acquire lock, handle appropriately
-        //             fclose($lockHandle);
-        //             throw new Exception('Failed to acquire lock');
-        //         }
+                // Acquire an exclusive lock
+                $lockFile = $cacheFilePath . '.lock';
+                $lockHandle = fopen($lockFile, 'w');
+                if (!flock($lockHandle, LOCK_EX)) {
+                    // Failed to acquire lock, handle appropriately
+                    fclose($lockHandle);
+                    throw new Exception('Failed to acquire lock');
+                }
 
-        //         if (!file_exists($cacheFilePath)) {
-        //             // Send email
-        //             Mail::to($emailAddress)->send(new LandSubmissionEmail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+                if (!file_exists($cacheFilePath)) {
+                    // Send email
+                    Mail::to($emailAddress)->send(new LandSubmissionEmail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
-        //             // Mark email as sent
-        //             file_put_contents($cacheFilePath, 'sent');
+                    // Mark email as sent
+                    file_put_contents($cacheFilePath, 'sent');
 
-        //             // Log the success
-        //             Log::channel('sendmailapproval')->info('Email Land Submission doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $emailAddress);
-        //             return 'Email berhasil dikirim ke: ' . $emailAddress;
-        //         } else {
-        //             // Email was already sent
-        //             Log::channel('sendmailapproval')->info('Email Land Submission doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $emailAddress);
-        //             return 'Email has already been sent to: ' . $emailAddress;
-        //         }
-        //     } else {
-        //         // No email address provided
-        //         Log::channel('sendmail')->warning("No email address provided for document " . $doc_no);
-        //         return "No email address provided";
-        //     }
-        // } catch (\Exception $e) {
-        //     // Error occurred
-        //     Log::channel('sendmail')->error('Failed to send email: ' . $e->getMessage());
-        //     return "Failed to send email: " . $e->getMessage();
-        // }
+                    // Log the success
+                    Log::channel('sendmailapproval')->info('Email Land Submission doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $emailAddress);
+                    return 'Email berhasil dikirim ke: ' . $emailAddress;
+                } else {
+                    // Email was already sent
+                    Log::channel('sendmailapproval')->info('Email Land Submission doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $emailAddress);
+                    return 'Email has already been sent to: ' . $emailAddress;
+                }
+            } else {
+                // No email address provided
+                Log::channel('sendmail')->warning("No email address provided for document " . $doc_no);
+                return "No email address provided";
+            }
+        } catch (\Exception $e) {
+            // Error occurred
+            Log::channel('sendmail')->error('Failed to send email: ' . $e->getMessage());
+            return "Failed to send email: " . $e->getMessage();
+        }
     }
 
     public function processData($status='', $encrypt='')
