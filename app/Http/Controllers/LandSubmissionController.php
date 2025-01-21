@@ -85,7 +85,7 @@ class LandSubmissionController extends Controller
             'sender'            => $request->sender,
             'sender_addr'       => $request->sender_addr,
 	        'desc_sub'          => $request->desc_sub,
-            'request_amt'       => $request_amt_data,
+            'request_amt'       => implode(', ', $request_amt_data),
             'submission_no'     => $request->submission_no,
             'url_file'          => $url_data,
             'file_name'         => $file_data,
@@ -101,7 +101,7 @@ class LandSubmissionController extends Controller
             'level_no'          => $request->level_no,
             'user_id'           => $request->user_id,
             'email_addr'        => $request->email_addr,
-            'entity_name'   => $request->entity_name,
+            'entity_name'       => $request->entity_name,
             'type'              => 'E',
             'type_module'       => 'LM',
             'text'              => 'Land Submission'
