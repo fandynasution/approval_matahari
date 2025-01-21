@@ -118,28 +118,6 @@
                                             {{ $dataArray['sender'] }}
                                         </a>
                                     </p>
-
-                                    @php
-                                        $hasApproval = false;
-                                        $counter = 0;
-                                    @endphp
-                    
-                                    @foreach($dataArray['approve_list'] as $key => $approve_list)
-                                        @if($approve_list !== '' && $approve_list !== 'EMPTY')
-                                            @if(!$hasApproval)
-                                                @php
-                                                    $hasApproval = true;
-                                                @endphp
-                                                <p style="text-align:left; margin-bottom: 15px; color: #000000; font-size: 16px;">
-                                                    <span>This request approval has been approved by :</span><br>
-                                            @endif
-                                            {{ ++$counter }}. {{ $approve_list }}<br>
-                                        @endif
-                                    @endforeach
-                    
-                                    @if($hasApproval)
-                                        </p>
-                                    @endif
                     
                                     <p style="text-align:left;margin-bottom: 15px; color: #000000; font-size: 16px;">
                                         <b>Please do not reply, as this is an automated-generated email.</b><br>
