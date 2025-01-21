@@ -324,24 +324,29 @@ class LandSubmissionController extends Controller
         $sth->bindParam(4, $data["level_no"]);
         $sth->bindParam(5, $reason);
         $sth->execute();
-        if ($sth == true) {
-            $msg = "You Have Successfully ".$descstatus." the Land Submission No. ".$data["doc_no"];
-            $notif = $descstatus." !";
-            $st = 'OK';
-            $image = $imagestatus;
-        } else {
-            $msg = "You Failed to ".$descstatus." the Land Submission No.".$data["doc_no"];
-            $notif = 'Fail to '.$descstatus.' !';
-            $st = 'OK';
-            $image = "reject.png";
-        }
-        $msg1 = array(
-            "Pesan" => $msg,
-            "St" => $st,
-            "notif" => $notif,
-            "image" => $image,
-            "entity_name"   => $data["entity_name"]
-        );
-        return view("email.after", $msg1);
+        var_dump($data["entity_cd"]);
+        var_dump($data["doc_no"]);
+        var_dump($status);
+        var_dump($data["level_no"]);
+        var_dump($reason);
+        // if ($sth == true) {
+        //     $msg = "You Have Successfully ".$descstatus." the Land Submission No. ".$data["doc_no"];
+        //     $notif = $descstatus." !";
+        //     $st = 'OK';
+        //     $image = $imagestatus;
+        // } else {
+        //     $msg = "You Failed to ".$descstatus." the Land Submission No.".$data["doc_no"];
+        //     $notif = 'Fail to '.$descstatus.' !';
+        //     $st = 'OK';
+        //     $image = "reject.png";
+        // }
+        // $msg1 = array(
+        //     "Pesan" => $msg,
+        //     "St" => $st,
+        //     "notif" => $notif,
+        //     "image" => $image,
+        //     "entity_name"   => $data["entity_name"]
+        // );
+        // return view("email.after", $msg1);
     }
 }
