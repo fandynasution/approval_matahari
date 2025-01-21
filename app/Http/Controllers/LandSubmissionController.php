@@ -317,7 +317,7 @@ class LandSubmissionController extends Controller
             $imagestatus = "reject.png";
         }
         $pdo = DB::connection('matahari')->getPdo();
-        $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_land_submission ?, ?, ?, ?, ?, ?;");
+        $sth = $pdo->prepare("EXEC mgr.xrl_send_mail_approval_land_submission ?, ?, ?, ?, ?, ?;");
         $sth->bindParam(1, $data["entity_cd"]);
         $sth->bindParam(2, $data["doc_no"]);
         $sth->bindParam(3, $status);
