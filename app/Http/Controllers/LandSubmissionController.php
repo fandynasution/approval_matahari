@@ -74,44 +74,56 @@ class LandSubmissionController extends Controller
             $approve_date_data[] = $approve_date;
         }
 
-        $transaction_date = Carbon::createFromFormat('Y-m-d H:i:s', $request->transaction_date)->format('d-m-Y');
-
         $dataArray = array(
-            'user_id'           => $request->user_id,
-            'level_no'          => $request->level_no,
             'entity_cd'         => $request->entity_cd,
+            'entity_name'       => $request->entity_name,
             'doc_no'            => $request->doc_no,
+            'level_no'          => $request->level_no,
+            'approved_seq'      => $request->approved_seq,
+            'descs'             => $request->descs,
             'ref_no'            => $request->ref_no,
-            'type'              => $type_data,
-            'owner'             => $owner_data,
-            'transaction_date'  => $transaction_date,
-            'nop_no'            => $nop_no_data,
-	        'descpeng'          => $request->descpeng,
-            'sph_trx_no'        => $request->sph_trx_no,
+            'user_id'           => $request->user_id,
+            'user_name'         => $request->user_name,
+            'email_addr'        => $request->email_addr,
+            'sender'            => $request->sender,
+            'sender_addr'       => $request->sender_addr,
+	        'desc_sub'          => $request->desc_sub,
             'request_amt'       => $request_amt_data,
-            'sum_amt'           => $formatted_sum_amt,
+            'submission_no'     => $request->submission_no,
             'url_file'          => $url_data,
             'file_name'         => $file_data,
             'approve_list'      => $approve_data,
-            'approved_date'     => $approve_date_data,
-            'email_addr'        => $request->email_addr,
-            'user_name'         => $request->user_name,
-            'sender_name'       => $request->sender_name,
-            'descs'             => $request->descs,
+            'clarify_user'      => $request->clarify_user,
+            'clarify_email'     => $request->clarify_email,           
             'link'              => 'landsubmission',
         );
 
-        try {
-            $emailAddresses = $request->email_addr;
-            $doc_no = $request->doc_no;
-            $entity_cd = $request->entity_cd;
-            $level_no = $request->level_no;
-            $approve_seq = $request->approve_seq;
-        
-            // Check if email addresses are provided and not empty
-            if (!empty($emailAddresses)) {
-                $email = $emailAddresses; // Since $emailAddresses is always a single email address (string)
+        $data2Encrypt = array(
+            'entity_cd'         => $request->entity_cd,
+            'doc_no'            => $request->doc_no,
+            'level_no'          => $request->level_no,
+            'user_id'           => $request->user_id,
+            'email_addr'        => $request->email_addr,
+            'entity_name'   => $request->entity_name,
+            'type'              => 'E',
+            'type_module'       => 'LM',
+            'text'              => 'Land Submission'
+        );
+        Artisan::call('config:cache');
+        Artisan::call('cache:clear');
+        Cache::flush();
+        // Melakukan enkripsi pada $dataArray
+        $encryptedData = Crypt::encrypt($data2Encrypt);
 
+        try {
+            $emailAddress = strtolower($request->email_addr);
+            $approve_seq = $request->approve_seq;
+            $entity_cd = $request->entity_cd;
+            $doc_no = $request->doc_no;
+            $level_no = $request->level_no;
+            $entity_name = $request->entity_name;
+
+            if (!empty($emailAddress)) {
                 // Check if the email has been sent before for this document
                 $cacheFile = 'email_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
                 $cacheFilePath = storage_path('app/mail_cache/send_lm_submission/' . date('Ymd') . '/' . $cacheFile);
@@ -133,53 +145,73 @@ class LandSubmissionController extends Controller
 
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    Mail::to($email)->send(new LandSubmissionEmail($dataArray));
-        
+                    Mail::to($emailAddress)->send(new LandSubmissionEmail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
-        
+
                     // Log the success
-                    Log::channel('sendmailapproval')->info('Email doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' berhasil dikirim ke: ' . $email);
-                    return 'Email berhasil dikirim';
+                    Log::channel('sendmailapproval')->info('Email Land Submission doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $emailAddress);
+                    return 'Email berhasil dikirim ke: ' . $emailAddress;
                 } else {
                     // Email was already sent
-                    Log::channel('sendmailapproval')->info('Email doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
-                    return 'Email has already been sent to: ' . $email;
+                    Log::channel('sendmailapproval')->info('Email Land Submission doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $emailAddress);
+                    return 'Email has already been sent to: ' . $emailAddress;
                 }
             } else {
-                Log::channel('sendmailapproval')->warning('Tidak ada alamat email yang diberikan.');
-                return "Tidak ada alamat email yang diberikan.";
+                // No email address provided
+                Log::channel('sendmail')->warning("No email address provided for document " . $doc_no);
+                return "No email address provided";
             }
         } catch (\Exception $e) {
-            Log::channel('sendmailapproval')->error('Gagal mengirim email: ' . $e->getMessage());
-            return "Gagal mengirim email: " . $e->getMessage();
+            // Error occurred
+            Log::channel('sendmail')->error('Failed to send email: ' . $e->getMessage());
+            return "Failed to send email: " . $e->getMessage();
         }
     }
 
-    public function changestatus($status='', $entity_cd='', $doc_no='', $level_no='')
+    public function processData($status='', $encrypt='')
     {
-
         Artisan::call('config:cache');
         Artisan::call('cache:clear');
         Cache::flush();
+        $cacheKey = 'processData_' . $encrypt;
+
+        // Check if the data is already cached
+        if (Cache::has($cacheKey)) {
+            // If cached data exists, clear it
+            Cache::forget($cacheKey);
+        }
+
+        Log::info('Starting database query execution for processData');
+        $data = Crypt::decrypt($encrypt);
+
+        $msg = " ";
+        $msg1 = " ";
+        $notif = " ";
+        $st = " ";
+        $image = " ";
+
+        Log::info('Decrypted data: ' . json_encode($data));
 
         $where = array(
-            'doc_no'        => $doc_no,
-            'status'        => array("A",'R', 'C'),
-            'entity_cd'     => $entity_cd,
-            'level_no'      => $level_no,
-            'type'          => 'E',
-            'module'        => 'LM',
+            'doc_no'        => $data["doc_no"],
+            'entity_cd'     => $data["entity_cd"],
+            'level_no'      => $data["level_no"],
+            'type'          => $data["type"],
+            'module'        => $data["type_module"],
         );
 
         $query = DB::connection('matahari')
         ->table('mgr.cb_cash_request_appr')
         ->where($where)
-        ->whereIn('status', ["A", "R", "C"])
+        ->whereIn('status', array("A", "R", "C"))
         ->get();
 
-        if(count($query)>0){
-            $msg = 'You Have Already Made a Request to Land Submission No. '.$doc_no ;
+        Log::info('First query result: ' . json_encode($query));
+
+        if (count($query)>0) {
+            $msg = 'You Have Already Made a Request to Land Submission No. '.$data["doc_no"] ;
             $notif = 'Restricted !';
             $st  = 'OK';
             $image = "double_approve.png";
@@ -187,110 +219,132 @@ class LandSubmissionController extends Controller
                 "Pesan" => $msg,
                 "St" => $st,
                 "notif" => $notif,
-                "image" => $image
-            );return view("emails.after", $msg1);
-        } else {
-            if ($status == 'A') {
-                $name   = 'Approval';
-                $bgcolor = '#40de1d';
-                $valuebt  = 'Approve';
-            }else if ($status == 'R') {
-                $name   = 'Revision';
-                $bgcolor = '#f4bd0e';
-                $valuebt  = 'Revise';
-            } else if ($status == 'C'){
-                $name   = 'Cancelation';
-                $bgcolor = '#e85347';
-                $valuebt  = 'Cancel';
-            }
-            $data = array(
-                'entity_cd'     => $entity_cd, 
-                'doc_no'        => $doc_no, 
-                'status'        => $status,
-                'level_no'      => $level_no, 
-                'name'          => $name,
-                'bgcolor'       => $bgcolor,
-                'valuebt'       => $valuebt
+                "image" => $image,
+                "entity_name"   => $data["entity_name"]
             );
+            return view("email.after", $msg1);
+        } else {
+            $where2 = array(
+                'doc_no'        => $data["doc_no"],
+                'status'        => 'P',
+                'entity_cd'     => $data["entity_cd"],
+                'level_no'      => $data["level_no"],
+                'type'          => $data["type"],
+                'module'        => $data["type_module"],
+            );
+
+            $query2 = DB::connection('matahari')
+            ->table('mgr.cb_cash_request_appr')
+            ->where($where2)
+            ->get();
+
+            Log::info('Second query result: ' . json_encode($query2));
+
+            if (count($query2) == 0) {
+                $msg = 'There is no Land Submission with No. '.$data["doc_no"] ;
+                $notif = 'Restricted !';
+                $st  = 'OK';
+                $image = "double_approve.png";
+                $msg1 = array(
+                    "Pesan" => $msg,
+                    "St" => $st,
+                    "notif" => $notif,
+                    "image" => $image,
+                    "entity_name"   => $data["entity_name"]
+                );
+                return view("email.after", $msg1);
+            } else {
+                $name   = " ";
+                $bgcolor = " ";
+                $valuebt  = " ";
+                if ($status == 'A') {
+                    $name   = 'Approval';
+                    $bgcolor = '#40de1d';
+                    $valuebt  = 'Approve';
+                } else if ($status == 'R') {
+                    $name   = 'Revision';
+                    $bgcolor = '#f4bd0e';
+                    $valuebt  = 'Revise';
+                } else {
+                    $name   = 'Cancellation';
+                    $bgcolor = '#e85347';
+                    $valuebt  = 'Cancel';
+                }
+                $dataArray = Crypt::decrypt($encrypt);
+                $data = array(
+                    "status"    => $status,
+                    "encrypt"   => $encrypt,
+                    "name"      => $name,
+                    "bgcolor"   => $bgcolor,
+                    "valuebt"   => $valuebt,
+                    "entity_name"   => $dataArray["entity_name"]
+                );
+                return view('email/landsubmission/passcheckwithremark', $data);
+                Artisan::call('config:cache');
+                Artisan::call('cache:clear');
+            }
         }
-        return view('email/landsubmission/action', $data);
     }
 
     public function update(Request $request)
     {
-        $entity_cd = $request->entity_cd;
-        $doc_no = $request->doc_no;
+        $data = Crypt::decrypt($request->encrypt);
+
         $status = $request->status;
-        $level_no = $request->level_no;
-        $remarks = $request->remarks;
-        if($status == 'A') {
-            $pdo = DB::connection('matahari')->getPdo();
-            $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_land_submission ?, ?, ?, ?, ?;");
-            $sth->bindParam(1, $entity_cd);
-            $sth->bindParam(2, $doc_no);
-            $sth->bindParam(3, $status);
-            $sth->bindParam(4, $level_no);
-            $sth->bindParam(5, $remarks);
-            $sth->execute();
-            if ($sth == true) {
-                $msg = "You Have Successfully Approved the Land Submission No. ".$doc_no;
-                $notif = 'Approved !';
-                $st = 'OK';
-                $image = "approved.png";
-            } else {
-                $msg = "You Failed to Approve the Land Submission No ".$doc_no;
-                $notif = 'Fail to Approve !';
-                $st = 'OK';
-                $image = "reject.png";
-            }
-        } else if($status == 'R'){
-            $pdo = DB::connection('matahari')->getPdo();
-            $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_land_submission ?, ?, ?, ?, ?;");
-            $sth->bindParam(1, $entity_cd);
-            $sth->bindParam(2, $doc_no);
-            $sth->bindParam(3, $status);
-            $sth->bindParam(4, $level_no);
-            $sth->bindParam(5, $remarks);
-            $sth->execute();
-            if ($sth == true) {
-                $msg = "You Have Successfully Made a Revise Request on Land Submission No. ".$doc_no;
-                $notif = 'Revised !';
-                $st = 'OK';
-                $image = "revise.png";
-            } else {
-                $msg = "You Failed to Make a Revise Request on Land Submission No. ".$doc_no;
-                $notif = 'Fail to Revised !';
-                $st = 'OK';
-                $image = "reject.png";
-            }
+
+        $reasonget = $request->reason;
+
+        $descstatus = " ";
+        $imagestatus = " ";
+
+        $msg = " ";
+        $msg1 = " ";
+        $notif = " ";
+        $st = " ";
+        $image = " ";
+
+        if ($reasonget == '' || $reasonget == NULL) {
+            $reason = '0';
         } else {
-            $pdo = DB::connection('matahari')->getPdo();
-            $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_land_submission ?, ?, ?, ?, ?;");
-            $sth->bindParam(1, $entity_cd);
-            $sth->bindParam(2, $doc_no);
-            $sth->bindParam(3, $status);
-            $sth->bindParam(4, $level_no);
-            $sth->bindParam(5, $remarks);
-            $sth->execute();
-            if ($sth == true) {
-                $msg = "You Have Successfully Cancelled the Land Submission No. ".$doc_no;
-                $notif = 'Cancelled !';
-                $st = 'OK';
-                $image = "reject.png";
-            } else {
-                $msg = "You Failed to Cancel the Land Submission No. ".$doc_no;
-                $notif = 'Fail to Cancelled !';
-                $st = 'OK';
-                $image = "reject.png";
-            }
+            $reason = $reasonget;
+        }
+
+        if ($status == "A") {
+            $descstatus = "Approved";
+            $imagestatus = "approved.png";
+        } else if ($status == "R") {
+            $descstatus = "Revised";
+            $imagestatus = "revise.png";
+        } else {
+            $descstatus = "Cancelled";
+            $imagestatus = "reject.png";
+        }
+        $pdo = DB::connection('matahari')->getPdo();
+        $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_land_submission ?, ?, ?, ?, ?, ?;");
+        $sth->bindParam(1, $data["entity_cd"]);
+        $sth->bindParam(2, $data["doc_no"]);
+        $sth->bindParam(3, $status);
+        $sth->bindParam(4, $data["level_no"]);
+        $sth->bindParam(5, $reason);
+        $sth->execute();
+        if ($sth == true) {
+            $msg = "You Have Successfully ".$descstatus." the Land Submission No. ".$data["doc_no"];
+            $notif = $descstatus." !";
+            $st = 'OK';
+            $image = $imagestatus;
+        } else {
+            $msg = "You Failed to ".$descstatus." the Land Submission No.".$data["doc_no"];
+            $notif = 'Fail to '.$descstatus.' !';
+            $st = 'OK';
+            $image = "reject.png";
         }
         $msg1 = array(
             "Pesan" => $msg,
             "St" => $st,
+            "notif" => $notif,
             "image" => $image,
-            "notif" => $notif
+            "entity_name"   => $data["entity_name"]
         );
         return view("email.after", $msg1);
     }
-
 }

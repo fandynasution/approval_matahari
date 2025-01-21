@@ -123,7 +123,7 @@ use App\Http\Controllers\LandSubmissionController as LandSubmission;
 
 Route::POST('/landsubmission', [LandSubmission::class, 'mail']);
 Route::POST('/landsubmission/update', [LandSubmission::class, 'update']);
-Route::GET('/landsubmission/{status}/{entity_cd}/{doc_no}/{level_no}', [LandSubmission::class, 'changestatus']);
+Route::GET('/landsubmission/{status}/{encrypt}', [LandSubmission::class, 'changestatus']);
 
 use App\Http\Controllers\FeedbackLandSubmissionController as FeedbackSubmission;
 Route::POST('/feedbacksubmission', [FeedbackSubmission::class, 'Mail']);

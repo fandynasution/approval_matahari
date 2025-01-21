@@ -9,34 +9,43 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class LandSubmissionEmail extends Mailable
+class SendPoMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $mailData;
+    public $encryptedData;
+    public $dataArray;
+    public $fromName;
 
     /**
      * Create a new message instance.
-     * 
+     *
+     * @param array $encryptedData
+     * @param array $dataArray
+     * @param string|null $fromName
      * @return void
      */
-    public function __construct($mailData)
+    public function __construct($encryptedData, $dataArray)
     {
-        $this->mailData = $mailData;
+        $this->encryptedData = $encryptedData;
+        $this->dataArray = $dataArray;
+        $this->fromName = $fromName ?? config('mail.from.name');  // Fallback to .env if not provided
     }
 
     /**
      * Build the message.
-     * 
+     *
      * @return $this
-     * 
      */
     public function build()
     {
-        return $this->subject('Need Approval '.$this->mailData['descs'])
+
+        return $this->from(config('mail.from.address'), $this->fromName)
+                    ->subject('Need Approval '.$this->mailData['descs'])
                     ->view('email.landsubmission.send')
                     ->with([
-                        'data' => $this->mailData
+                        'encryptedData' => $this->encryptedData,
+                        'dataArray' => $this->dataArray,
                     ]);
     }
 }
