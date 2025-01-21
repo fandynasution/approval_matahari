@@ -76,7 +76,7 @@
                                         <p style="text-align:left; margin-bottom: 15px; color: #000000; font-size: 16px;">
                                             <b>{{ $dataArray['desc_sub'] }}</b><br>
                                             With a total amount of IDR {{ $dataArray['request_amt'] }}<br>
-                                            Submission no : {{ $dataArray['submission_no'] }}<br>
+                                            
                                         </p>
                                     </p>
                                 </td>
