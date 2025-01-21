@@ -41,7 +41,7 @@ class LandSubmissionEmail extends Mailable
     {
 
         return $this->from(config('mail.from.address'), $this->fromName)
-                    ->subject('Need Approval '.$this->dataArray['descs'])
+                    ->subject('Need Approval '.$this->dataArray['desc_sub'])
                     ->view('email.landsubmission.send')
                     ->with([
                         'encryptedData' => $this->encryptedData,
