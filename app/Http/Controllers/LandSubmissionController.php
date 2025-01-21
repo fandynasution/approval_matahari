@@ -115,7 +115,7 @@ class LandSubmissionController extends Controller
 
         try {
             $emailAddress = strtolower($request->email_addr);
-            $approve_seq = $request->approved_seq;
+            $approved_seq = $request->approved_seq;
             $entity_cd = $request->entity_cd;
             $doc_no = $request->doc_no;
             $level_no = $request->level_no;
