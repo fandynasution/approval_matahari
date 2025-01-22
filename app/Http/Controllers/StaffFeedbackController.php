@@ -460,15 +460,15 @@ class StaffFeedbackController extends Controller
         
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    Mail::to($emailAddress)->send(new StaffActionCbMail($EmailBack));
+                    Mail::to($$emailAddress)->send(new StaffActionCbMail($EmailBack));
         
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
-                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' berhasil dikirim ke: ' . $emailAddress);
-                    return 'Email berhasil dikirim ke: ' . $emailAddress;
+                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' berhasil dikirim ke: ' . $$emailAddress);
+                    return 'Email berhasil dikirim ke: ' . $$emailAddress;
                 } else {
-                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' sudah dikirim ke: ' . $emailAddress);
-                    return 'Email Sudah dikirim ke: ' . $emailAddress;
+                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' sudah dikirim ke: ' . $$emailAddress);
+                    return 'Email Sudah dikirim ke: ' . $$emailAddress;
                 }
             } else {
                 Log::channel('sendmail')->warning("Tidak ada alamat email untuk feedback yang diberikan");
