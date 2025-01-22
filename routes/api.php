@@ -46,6 +46,7 @@ use App\Http\Controllers\StaffFeedbackController as StaffFeedback;
 Route::POST('/feedback_po', [StaffFeedback::class, 'feedback_po']);
 Route::POST('/feedback_cb_fupd', [StaffFeedback::class, 'feedback_cb_fupd']);
 Route::POST('/feedback_cb', [StaffFeedback::class, 'feedback_cb']);
+Route::POST('/feedback_cm_progress', [StaffFeedback::class, 'feedback_cm_progress']);
 
 use App\Http\Controllers\CbPPuVvipNewController as CbPPuVvipNew;
 Route::POST('/cbppunewvvip', [CbPPuVvipNew::class, 'Mail']);
