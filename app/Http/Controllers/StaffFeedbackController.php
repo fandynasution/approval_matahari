@@ -439,15 +439,11 @@ class StaffFeedbackController extends Controller
             $approve_seq = $request->approve_seq;
             $dateTime_app = Carbon::createFromFormat('M  j Y h:iA', $request->approved_date)->format('Ymd');
             if (!empty($emailAddresses)) {
-                $emails = $emailAddresses;
-
-                $emailSent = false;
-                
                 // Check if the email has been sent before for this document
                 $cacheFile = 'email_feedback_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $status . '.txt';
-                $cacheFilePath = storage_path('app/mail_cache/feedbackCb/' . $dateTime_app    . '/' . $cacheFile);
+                $cacheFilePath = storage_path('app/mail_cache/feedback_cm_progress_wu/' . $dateTime_app    . '/' . $cacheFile);
                 $cacheDirectory = dirname($cacheFilePath);
-            
+        
                 // Ensure the directory exists
                 if (!file_exists($cacheDirectory)) {
                     mkdir($cacheDirectory, 0755, true);
@@ -464,18 +460,15 @@ class StaffFeedbackController extends Controller
         
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    Mail::to($emails)->send(new StaffActionCbMail($EmailBack));
-            
+                    Mail::to($emailAddress)->send(new StaffActionCbMail($EmailBack));
+        
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
-                    $sentTo = $emailAddresses;
-                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $sentTo);
-                    return 'Email berhasil dikirim ke: ' . $sentTo;
-                    $emailSent = true;
+                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' berhasil dikirim ke: ' . $emailAddress);
+                    return 'Email berhasil dikirim ke: ' . $emailAddress;
                 } else {
-                    // Email was already sent
-                    Log::channel('sendmailapproval')->info('Email Feedback doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $sentTo);
-                    return 'Email has already been sent to: ' . $sentTo;
+                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' sudah dikirim ke: ' . $emailAddress);
+                    return 'Email Sudah dikirim ke: ' . $emailAddress;
                 }
             } else {
                 Log::channel('sendmail')->warning("Tidak ada alamat email untuk feedback yang diberikan");
