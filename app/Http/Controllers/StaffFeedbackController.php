@@ -128,6 +128,9 @@ class StaffFeedbackController extends Controller
                     Log::channel('sendmailfeedback')->info('Email Feedback doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $sentTo);
                     return 'Email berhasil dikirim ke: ' . $sentTo;
                     $emailSent = true;
+                } else {
+                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' sudah dikirim ke: ' . $sentTo);
+                    return 'Email Sudah dikirim ke: ' . $sentTo;
                 }
             } else {
                 Log::channel('sendmail')->warning("Tidak ada alamat email untuk feedback yang diberikan");
@@ -242,6 +245,9 @@ class StaffFeedbackController extends Controller
                     Log::channel('sendmailfeedback')->info('Email Feedback doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $sentTo);
                     return 'Email berhasil dikirim ke: ' . $sentTo;
                     $emailSent = true;
+                } else {
+                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' sudah dikirim ke: ' . $sentTo);
+                    return 'Email Sudah dikirim ke: ' . $sentTo;
                 }
             } else {
                 Log::channel('sendmail')->warning("Tidak ada alamat email untuk feedback yang diberikan");
@@ -357,6 +363,9 @@ class StaffFeedbackController extends Controller
                     Log::channel('sendmailfeedback')->info('Email Feedback doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $sentTo);
                     return 'Email berhasil dikirim ke: ' . $sentTo;
                     $emailSent = true;
+                } else {
+                    Log::channel('sendmailfeedback')->info('Email Feedback doc_no ' . $doc_no . ' Entity ' . $entity_cd . ' sudah dikirim ke: ' . $sentTo);
+                    return 'Email Sudah dikirim ke: ' . $sentTo;
                 }
             } else {
                 Log::channel('sendmail')->warning("Tidak ada alamat email untuk feedback yang diberikan");
