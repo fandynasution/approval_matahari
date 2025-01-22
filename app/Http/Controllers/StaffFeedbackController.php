@@ -438,7 +438,6 @@ class StaffFeedbackController extends Controller
             $status = $request->status;
             $approve_seq = $request->approve_seq;
             $dateTime_app = Carbon::createFromFormat('M  j Y h:iA', $request->approved_date)->format('Ymd');
-            var_dump($dateTime_app);
             if (!empty($emailAddresses)) {
                 $emails = $emailAddresses;
 
