@@ -54,7 +54,7 @@ class CmProgressController extends Controller
             'user_name'         => $request->user_name,
             'progress_no'       => $request->progress_no,
             "surveyor"			=> $request->surveyor,
-            'doc_link'          => $request->doc_link,
+            'doc_link'          => $request->url_link,
             'curr_cd'           => $request->curr_cd,
             "contract_desc"		=> $request->contract_desc,
             'curr_progress'     => $curr_progress,
