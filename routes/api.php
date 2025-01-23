@@ -48,10 +48,10 @@ Route::POST('/feedback_cb_fupd', [StaffFeedback::class, 'feedback_cb_fupd']);
 Route::POST('/feedback_cb', [StaffFeedback::class, 'feedback_cb']);
 Route::POST('/feedback_cm_progress', [StaffFeedback::class, 'feedback_cm_progress']);
 
-use App\Http\Controllers\CbPPuVvipNewController as CbPPuVvipNew;
-Route::POST('/cbppunewvvip', [CbPPuVvipNew::class, 'Mail']);
-Route::GET('/cbppunewvvip/{status}/{encrypt}', [CbPPuVvipNew::class, 'processData']);
-Route::POST('/cbppunewvvip/getaccess', [CbPPuVvipNew::class, 'getaccess']);
+use App\Http\Controllers\CbPPuVvipController as CbPPuVvip;
+Route::POST('/cbppuvvip', [CbPPuVvip::class, 'Mail']);
+Route::GET('/cbppuvvip/{status}/{encrypt}', [CbPPuVvip::class, 'processData']);
+Route::POST('/cbppuvvip/getaccess', [CbPPuVvip::class, 'getaccess']);
 
 use App\Http\Controllers\SelController as Select;
 Route::get('/select', [Select::class, 'index']);
