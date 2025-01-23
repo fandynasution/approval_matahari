@@ -24,8 +24,8 @@ class CmDoneController extends Controller
             $approve_data[] = $approve;
         }
 
-        $list_of_urls = explode('; ', $data["url_file"]);
-        $list_of_files = explode('; ', $data["file_name"]);
+        $list_of_urls = explode('; ', $request->url_file);
+        $list_of_files = explode('; ', $request->file_name);
 
         $url_data = [];
         $file_data = [];
