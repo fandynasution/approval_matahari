@@ -66,7 +66,7 @@ class PLBudgetLymanController extends Controller
             'level_no'      => $request->level_no,
             'doc_no'        => $request->doc_no,
             'user_id'       => $request->user_id,
-            'type'          => 'Y',
+            'type'          => 'X',
             'type_module'   => 'PL',
             'text'          => 'Budget Lyman'
         );
