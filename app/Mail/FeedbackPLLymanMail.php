@@ -30,7 +30,7 @@ class FeedbackPLLymanMail extends Mailable
      */
     public function build()
     {
-        return $this->subject($this->mailData['subject'].' '.$this->mailData['descs'].' No. '.$this->mailData['doc_no'])
+        return $this->subject($this->mailData['subject'].' RAB Budget No. '.$this->mailData['doc_no'])
                     ->view('email.staffaction.plbudgetlyman')
                     ->with(['data' => $this->mailData]);
     }
