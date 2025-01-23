@@ -30,7 +30,7 @@ Route::GET('/poselection/{status}/{encrypt}', [Selection::class, 'processData'])
 Route::POST('/poselection/getaccess', [Selection::class, 'getaccess']);
 Route::POST('/pos/getaccess', [Selection::class, 'getaccess']);
 
-use App\Http\Controllers\CbPPuController as CbPPu;
+use App\Http\Controllers\CbPpuController as CbPPu;
 Route::POST('/cbppu', [CbPPu::class, 'Mail']);
 Route::GET('/cbppu/{status}/{encrypt}', [CbPPu::class, 'processData']);
 Route::POST('/cbppu/getaccess', [CbPPu::class, 'getaccess']);
