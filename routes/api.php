@@ -30,10 +30,10 @@ Route::GET('/poselection/{status}/{encrypt}', [Selection::class, 'processData'])
 Route::POST('/poselection/getaccess', [Selection::class, 'getaccess']);
 Route::POST('/pos/getaccess', [Selection::class, 'getaccess']);
 
-use App\Http\Controllers\CbPPuNewController as CbPPuNew;
-Route::POST('/cbppu', [CbPPuNew::class, 'Mail']);
-Route::GET('/cbppu/{status}/{encrypt}', [CbPPuNew::class, 'processData']);
-Route::POST('/cbppu/getaccess', [CbPPuNew::class, 'getaccess']);
+use App\Http\Controllers\CbPPuController as CbPPu;
+Route::POST('/cbppu', [CbPPu::class, 'Mail']);
+Route::GET('/cbppu/{status}/{encrypt}', [CbPPu::class, 'processData']);
+Route::POST('/cbppu/getaccess', [CbPPu::class, 'getaccess']);
 
 use App\Http\Controllers\StaffActionController as StaffAction;
 Route::POST('/staffaction', [StaffAction::class, 'staffaction']);
