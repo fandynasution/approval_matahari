@@ -123,7 +123,7 @@ class AutoFeedbackController extends Controller
                 $exec = 'mgr.x_send_mail_approval_feedback';
                 $folder = 'feedbackCb';
             } else if ($type == 'C' && $module == 'CM') {
-                $descsLong = 'Warranty Complete';
+                $descsLong = 'Contract Close';
                 $cacheFile = 'email_feedback_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $status . '.txt';
                 $exec = 'mgr.x_send_mail_approval_feedback';
                 $folder = 'feedbackCb';

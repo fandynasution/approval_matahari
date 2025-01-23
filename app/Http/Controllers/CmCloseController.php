@@ -24,6 +24,20 @@ class CmCloseController extends Controller
             $approve_data[] = $approve;
         }
 
+        $list_of_urls = explode('; ', $request->url_file);
+        $list_of_files = explode('; ', $request->file_name);
+
+        $url_data = [];
+        $file_data = [];
+
+        foreach ($list_of_urls as $url) {
+            $url_data[] = $url;
+        }
+
+        foreach ($list_of_files as $file) {
+            $file_data[] = $file;
+        }
+
         $dataArray = array(
             'sender'            => $request->sender,
             'entity_name'       => $request->entity_name,
@@ -36,8 +50,10 @@ class CmCloseController extends Controller
             'clarify_user'      => $request->clarify_user,
             'clarify_email'     => $request->clarify_email,
             'sender_addr'       => $request->sender_addr,
-            'body'              => "Please approve Warranty Complete No. ".$request->doc_no." for ".$request->descs,
-            'subject'           => "Need Approval for Warranty Complete No.  ".$request->doc_no,
+            'url_file'          => $url_data,
+            'file_name'         => $file_data,
+            'body'              => "Please approve Contract Close No. ".$request->doc_no." for ".$request->descs,
+            'subject'           => "Need Approval for Contract Close No.  ".$request->doc_no,
         );
 
         $data2Encrypt = array(
@@ -99,11 +115,11 @@ class CmCloseController extends Controller
                     file_put_contents($cacheFilePath, 'sent');
 
                     // Log the success
-                    Log::channel('sendmailapproval')->info('Email CM Close doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $email);
+                    Log::channel('sendmailapproval')->info('Email Contract Close doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $email);
                     return 'Email berhasil dikirim ke: ' . $email;
                 } else {
                     // Email was already sent
-                    Log::channel('sendmailapproval')->info('Email CM Close doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
+                    Log::channel('sendmailapproval')->info('Email Contract Close doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
                     return 'Email has already been sent to: ' . $email;
                 }
             } else {
@@ -152,7 +168,7 @@ class CmCloseController extends Controller
         Log::info('First query result: ' . json_encode($query));
 
         if (count($query) > 0) {
-            $msg = 'You have already made a request to Warranty Complete No. ' . $data["doc_no"];
+            $msg = 'You have already made a request to Contract Close No. ' . $data["doc_no"];
             $notif = 'Restricted!';
             $st  = 'OK';
             $image = "double_approve.png";
@@ -181,7 +197,7 @@ class CmCloseController extends Controller
             Log::info('Second query result: ' . json_encode($query2));
 
             if (count($query2) == 0) {
-                $msg = 'There is no Warranty Complete with No. ' . $data["doc_no"];
+                $msg = 'There is no Contract Close with No. ' . $data["doc_no"];
                 $notif = 'Restricted!';
                 $st  = 'OK';
                 $image = "double_approve.png";

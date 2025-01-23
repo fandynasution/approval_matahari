@@ -225,7 +225,7 @@ class CheckFeedbackController extends Controller
             } 
             else if ($trim_type == 'C' && $trim_module == 'CM') 
             {
-                $descsLong = 'Warranty Complete';
+                $descsLong = 'Contract Close';
                 $cacheFile = 'email_feedback_sent_' . $trim_approve_seq . '_' . $trim_entity_cd . '_' . $trim_doc_no . '_' . $trim_status . '.txt';
                 $exec = 'mgr.x_send_mail_approval_feedback';
                 $folder = 'feedbackCb';
