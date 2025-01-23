@@ -26,16 +26,16 @@ class FeedbackPLController extends Controller
         if (strcasecmp($request->status, 'R') == 0) {
 
             $action = 'Revision';
-            $bodyEMail = 'Please revise '.$request->descs.' No. '.$request->doc_no;
+            $bodyEMail = 'Please revise RAB Budget No. '.$request->doc_no;
 
         } else if (strcasecmp($request->status, 'C') == 0){
             
             $action = 'Cancellation';
-            $bodyEMail = $request->descs.' No. '.$request->doc_no;
+            $bodyEMail = 'RAB Budget No. ' . $request->doc_no . ' has been cancelled with the reason : ';
 
         } else if (strcasecmp($request->status, 'A') == 0) {
             $action = 'Approval';
-            $bodyEMail = 'Your Request '.$request->descs.' No. '.$request->doc_no.' has been Approved';
+            $bodyEMail = 'Your Request RAB Budget No. '.$request->doc_no.' has been Approved';
         }
 
         $EmailBack = array(
