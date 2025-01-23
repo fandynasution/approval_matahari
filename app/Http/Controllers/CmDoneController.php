@@ -24,6 +24,20 @@ class CmDoneController extends Controller
             $approve_data[] = $approve;
         }
 
+        $list_of_urls = explode('; ', $data["url_file"]);
+        $list_of_files = explode('; ', $data["file_name"]);
+
+        $url_data = [];
+        $file_data = [];
+
+        foreach ($list_of_urls as $url) {
+            $url_data[] = $url;
+        }
+
+        foreach ($list_of_files as $file) {
+            $file_data[] = $file;
+        }
+
         $dataArray = array(
             'sender'            => $request->sender,
             'entity_name'       => $request->entity_name,
@@ -36,6 +50,8 @@ class CmDoneController extends Controller
             'clarify_user'      => $request->clarify_user,
             'clarify_email'     => $request->clarify_email,
             'sender_addr'       => $request->sender_addr,
+            'url_file'          => $url_data,
+            'file_name'         => $file_data,
             'body'              => "Please approve Contract Complete No. ".$request->doc_no." for ".$request->descs,
             'subject'           => "Need Approval for Contract Complete No.  ".$request->doc_no,
         );
