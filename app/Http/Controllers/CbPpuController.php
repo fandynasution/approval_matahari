@@ -10,19 +10,21 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Mail\SendCbPpuMail;
+use PDO;
+use DateTime;
 
-class CbPpuController extends Controller
+class CbPPuController extends Controller
 {
-    public function processModule($data)
+    public function Mail(Request $request)
     {
-        if (strpos($data["ppu_descs"], "\n") !== false) {
-            $ppu_descs = str_replace("\n", ' (', $data["ppu_descs"]) . ')';
+        if (strpos($request->ppu_descs, "\n") !== false) {
+            $ppu_descs = str_replace("\n", ' (', $request->ppu_descs) . ')';
         } else {
-            $ppu_descs = $data["ppu_descs"];
+            $ppu_descs = $request->ppu_descs;
         }
 
-        $list_of_urls = explode(',', $data["url_file"]);
-        $list_of_files = explode(',', $data["file_name"]);
+        $list_of_urls = explode(',', $request->url_file);
+        $list_of_files = explode(',', $request->file_name);
 
         $url_data = [];
         $file_data = [];
@@ -35,55 +37,52 @@ class CbPpuController extends Controller
             $file_data[] = $file;
         }
 
-        $list_of_approve = explode('; ',  $data["approve_exist"]);
+        $list_of_approve = explode('; ',  $request->approve_exist);
         $approve_data = [];
         foreach ($list_of_approve as $approve) {
             $approve_data[] = $approve;
         }
 
-        $ppu_amt = number_format($data["ppu_amt"], 2, '.', ',');
+        $ppu_amt = number_format($request->ppu_amt, 2, '.', ',');
 
         $dataArray = array(
             'module'        => 'CbPpu',
-            'ppu_no'        => $data['ppu_no'],
-            'ppu_descs'     => $data['ppu_descs'],
-            'sender'        => $data['sender'],
-            'sender_addr'   => $data['sender_addr'],
+            'ppu_no'        => $request->ppu_no,
+            'ppu_descs'     => $request->ppu_descs,
+            'sender'        => $request->sender,
+            'sender_addr'   => $request->sender_addr,
             'url_file'      => $url_data,
             'file_name'     => $file_data,
-            'entity_name'   => $data['entity_name'],
-            'descs'         => $data['descs'],
-            'user_name'     => $data['user_name'],
-            "doc_link"      => $data['document_link'],
-            'reason'        => $data['reason'],
-            'pay_to'        => $data['pay_to'],
-            'forex'         => $data['forex'],
+            'entity_name'   => $request->entity_name,
+            'descs'         => $request->descs,
+            "doc_link"      => $request->document_link,
+            'user_name'     => $request->user_name,
+            'reason'        => $request->reason,
+            'pay_to'        => $request->pay_to,
+            'forex'         => $request->forex,
             'ppu_amt'       => $ppu_amt,
             'approve_list'  => $approve_data,
-            'clarify_user'  => $data['clarify_user'],
-            'clarify_email' => $data['clarify_email'],
-            'body'          => "Please approve Payment Request No. ".$data['ppu_no']." for ".$ppu_descs,
-            'subject'       => "Need Approval for Payment Request No.  ".$data['ppu_no'],
+            'clarify_user'  => $request->clarify_user,
+            'clarify_email' => $request->clarify_email,
+            'body'          => "Please approve Payment Request No. ".$request->ppu_no." for ".$ppu_descs,
+            'subject'       => "Need Approval for Payment Request No.  ".$request->ppu_no,
         );
 
         $data2Encrypt = array(
-            'entity_cd'     => $data["entity_cd"],
-            'project_no'    => $data["project_no"],
-            'doc_no'        => $data["doc_no"],
-            'trx_type'      => $data["trx_type"],
-            'level_no'      => $data["level_no"],
-            'usergroup'     => $data["usergroup"],
-            'user_id'       => $data["user_id"],
-            'supervisor'    => $data["supervisor"],
-            'email_address' => $data["email_addr"],
+            'entity_cd'     => $request->entity_cd,
+            'project_no'    => $request->project_no,
+            'doc_no'        => $request->doc_no,
+            'trx_type'      => $request->trx_type,
+            'level_no'      => $request->level_no,
+            'usergroup'     => $request->usergroup,
+            'user_id'       => $request->user_id,
+            'supervisor'    => $request->supervisor,
+            'email_address' => $request->email_addr,
             'type'          => 'U',
             'type_module'   => 'CB',
             'text'          => 'Payment Request'
         );
 
-
-
-        // Melakukan enkripsi pada $dataArray
         $encryptedData = Crypt::encrypt($data2Encrypt);
 
         try {
@@ -119,7 +118,7 @@ class CbPpuController extends Controller
 
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    Mail::to($email)->send(new SendCbPpuNewMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+                    Mail::to($email)->send(new SendCbPpuMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
@@ -143,12 +142,131 @@ class CbPpuController extends Controller
         }
     }
 
-    public function update($status, $encrypt, $reason)
+    public function processData($status='', $encrypt='')
     {
         Artisan::call('config:cache');
         Artisan::call('cache:clear');
         Cache::flush();
+
+        $cacheKey = 'processData_' . $encrypt;
+
+        // Check if the data is already cached
+        if (Cache::has($cacheKey)) {
+            // If cached data exists, clear it
+            Cache::forget($cacheKey);
+        }
+
+        $query = 0;
+        $query2 = 0;
+
         $data = Crypt::decrypt($encrypt);
+
+        $msg = " ";
+        $msg1 = " ";
+        $notif = " ";
+        $st = " ";
+        $image = " ";
+
+        Log::info('Decrypted data: ' . json_encode($data));
+
+        $where = array(
+            'doc_no'        => $data["doc_no"],
+            'entity_cd'     => $data["entity_cd"],
+            'level_no'      => $data["level_no"],
+            'type'          => $data["type"],
+            'module'        => $data["type_module"],
+        );
+
+        $query = DB::connection('matahari')
+        ->table('mgr.cb_cash_request_appr')
+        ->where($where)
+        ->whereIn('status', ["A", "R", "C"])
+        ->get();
+
+        Log::info('First query result: ' . json_encode($query));
+
+        if (count($query)>0) {
+            $msg = 'You Have Already Made a Request to '.$data["text"].' No. '.$data["doc_no"] ;
+            $notif = 'Restricted !';
+            $st  = 'OK';
+            $image = "double_approve.png";
+            $msg1 = array(
+                "Pesan" => $msg,
+                "St" => $st,
+                "notif" => $notif,
+                "image" => $image
+            );
+            return view("email.after", $msg1);
+        } else {
+            $where2 = array(
+                'doc_no'        => $data["doc_no"],
+                'status'        => 'P',
+                'entity_cd'     => $data["entity_cd"],
+                'level_no'      => $data["level_no"],
+                'type'          => $data["type"],
+                'module'        => $data["type_module"],
+            );
+
+            $query2 = DB::connection('matahari')
+            ->table('mgr.cb_cash_request_appr')
+            ->where($where2)
+            ->get();
+
+            Log::info('Second query result: ' . json_encode($query2));
+
+            if (count($query2) == 0) {
+                $msg = 'There is no '.$data["text"].' with No. '.$data["doc_no"] ;
+                $notif = 'Restricted !';
+                $st  = 'OK';
+                $image = "double_approve.png";
+                $msg1 = array(
+                    "Pesan" => $msg,
+                    "St" => $st,
+                    "notif" => $notif,
+                    "image" => $image
+                );
+                return view("email.after", $msg1);
+            } else {
+                $name   = " ";
+                $bgcolor = " ";
+                $valuebt  = " ";
+                if ($status == 'A') {
+                    $name   = 'Approval';
+                    $bgcolor = '#40de1d';
+                    $valuebt  = 'Approve';
+                } else if ($status == 'R') {
+                    $name   = 'Revision';
+                    $bgcolor = '#f4bd0e';
+                    $valuebt  = 'Revise';
+                } else {
+                    $name   = 'Cancellation';
+                    $bgcolor = '#e85347';
+                    $valuebt  = 'Cancel';
+                }
+                $dataArray = Crypt::decrypt($encrypt);
+                $data = array(
+                    "status"    => $status,
+                    "doc_no"    => $dataArray["doc_no"],
+                    "email"     => $dataArray["email_address"],
+                    "encrypt"   => $encrypt,
+                    "name"      => $name,
+                    "bgcolor"   => $bgcolor,
+                    "valuebt"   => $valuebt
+                );
+                return view('email/cbppu/passcheckwithremark', $data);
+                Artisan::call('config:cache');
+                Artisan::call('cache:clear');
+            }
+        }
+    }
+
+    public function getaccess(Request $request)
+    {
+        $data = Crypt::decrypt($request->encrypt);
+
+        $status = $request->status;
+
+        $reasonget = $request->reason;
 
         $descstatus = " ";
         $imagestatus = " ";
@@ -158,6 +276,12 @@ class CbPpuController extends Controller
         $notif = " ";
         $st = " ";
         $image = " ";
+
+        if ($reasonget == '' || $reasonget == NULL) {
+            $reason = '0';
+        } else {
+            $reason = $reasonget;
+        }
 
         if ($status == "A") {
             $descstatus = "Approved";
@@ -200,7 +324,5 @@ class CbPpuController extends Controller
             "image" => $image
         );
         return view("email.after", $msg1);
-        Artisan::call('config:cache');
-Artisan::call('cache:clear');
     }
 }
