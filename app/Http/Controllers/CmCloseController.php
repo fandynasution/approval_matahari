@@ -286,12 +286,12 @@ class CmCloseController extends Controller
         $sth->bindParam(10, $reason);
         $sth->execute();
         if ($sth == true) {
-            $msg = "You Have Successfully ".$descstatus." the Warranty Complete No. ".$data["doc_no"];
+            $msg = "You Have Successfully ".$descstatus." the Contract Close No. ".$data["doc_no"];
             $notif = $descstatus." !";
             $st = 'OK';
             $image = $imagestatus;
         } else {
-            $msg = "You Failed to ".$descstatus." the Warranty Complete No.".$data["doc_no"];
+            $msg = "You Failed to ".$descstatus." the Contract Close No.".$data["doc_no"];
             $notif = 'Fail to '.$descstatus.' !';
             $st = 'OK';
             $image = "reject.png";
