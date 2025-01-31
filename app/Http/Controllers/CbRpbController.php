@@ -115,7 +115,9 @@ class CbRpbController extends Controller
 
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    Mail::to($email)->send(new SendCbRpbMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+                    Mail::to($email)
+                    ->bcc(['muhamad.zidan@ifca.co.id', 'ahmad.ariffandy@ifca.co.id'])
+                    ->send(new SendCbRpbMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
@@ -175,16 +177,6 @@ class CbRpbController extends Controller
         $sth->bindParam(9, $data["supervisor"]);
         $sth->bindParam(10, $reason);
         $sth->execute();
-        // var_dump($data["entity_cd"]);
-        // var_dump($data["project_no"]);
-        // var_dump($data["doc_no"]);
-        // var_dump($data["trx_type"]);
-        // var_dump($status);
-        // var_dump($data["level_no"]);
-        // var_dump($data["usergroup"]);
-        // var_dump($data["user_id"]);
-        // var_dump($data["supervisor"]);
-        // var_dump($reason);
         if ($sth == true) {
             $msg = "You Have Successfully ".$descstatus." the Recapitulation Bank No. ".$data["doc_no"];
             $notif = $descstatus." !";
