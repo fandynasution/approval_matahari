@@ -130,10 +130,8 @@ class CbRpbController extends Controller
                     }
 
                     // Tambahkan BCC
-                    $mail->bcc([
-                        'muhamad.zidan@ifca.co.id', 
-                        'ahmad.ariffandy@ifca.co.id'
-                    ])->send(new SendCbPpuVvipMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
+                    $mail->bcc('muhamad.zidan@ifca.co.id')
+                         ->send(new SendCbRpbMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
