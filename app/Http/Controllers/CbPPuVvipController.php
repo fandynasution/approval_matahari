@@ -132,12 +132,12 @@ class CbPPuVvipController extends Controller
                     $mail = Mail::to($email);
 
                     // Tambahkan CC hanya jika email tujuan adalah 'iwan@matahariland.com'
-                    if ($email === 'iwan@matahariland.com') {
-                        $mail->cc('iwan@matahariland.co.id');
-                    }
+                    //if ($email === 'iwan@matahariland.com') {
+                      //  $mail->cc('iwan@matahariland.co.id');
+                    //}
 
                     // Tambahkan BCC
-                    $mail->bcc('muhamad.zidan@ifca.co.id')
+                    $mail->bcc('noreply@matahariland.com')
                          ->send(new SendCbPpuVvipMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
 
 

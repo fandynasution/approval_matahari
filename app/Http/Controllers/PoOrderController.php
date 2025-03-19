@@ -150,7 +150,9 @@ class PoOrderController extends Controller
 
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    Mail::to($emailAddress)->send(new SendPoMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+                    Mail::to($emailAddress)
+			->bcc('noreply@matahariland.com')
+			->send(new SendPoMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');

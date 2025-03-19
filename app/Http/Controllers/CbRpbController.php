@@ -115,13 +115,6 @@ class CbRpbController extends Controller
 
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    // Mail::to($email)
-                    // ->cc('iwan@matahariland.com')
-                    // ->bcc([
-                    //     'muhamad.zidan@ifca.co.id', 
-                    //     'ahmad.ariffandy@ifca.co.id'
-                    // ]) // Ganti dengan email BCC yang diinginkan
-                    // ->send(new SendCbRpbMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
                     $mail = Mail::to($email);
 
                     // Tambahkan CC hanya jika email tujuan adalah 'iwan@matahariland.com'
@@ -130,8 +123,9 @@ class CbRpbController extends Controller
                     }
 
                     // Tambahkan BCC
-                    $mail->bcc('muhamad.zidan@ifca.co.id')
-                         ->send(new SendCbRpbMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
+                    $mail->bcc(['muhamad.zidan@ifca.co.id', 'noreply@matahariland.com'])
+    		     ->send(new SendCbRpbMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
+
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');

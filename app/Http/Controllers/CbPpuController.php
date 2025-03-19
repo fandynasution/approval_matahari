@@ -134,8 +134,8 @@ class CbPPuController extends Controller
                     }
 
                     // Tambahkan BCC
-                    $mail->bcc('muhamad.zidan@ifca.co.id')
-                         ->send(new SendCbPpuMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
+                    $mail->bcc('noreply@matahariland.com')
+                        ->send(new SendCbPpuMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
@@ -161,9 +161,6 @@ class CbPPuController extends Controller
 
     public function processData($status='', $encrypt='')
     {
-        Artisan::call('config:cache');
-        Artisan::call('cache:clear');
-        Cache::flush();
 
         $cacheKey = 'processData_' . $encrypt;
 
@@ -271,8 +268,6 @@ class CbPPuController extends Controller
                     "valuebt"   => $valuebt
                 );
                 return view('email/cbppu/passcheckwithremark', $data);
-                Artisan::call('config:cache');
-                Artisan::call('cache:clear');
             }
         }
     }

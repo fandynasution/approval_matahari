@@ -91,7 +91,7 @@ class LandSubmissionController extends Controller
             'file_name'         => $file_data,
             'approve_list'      => $approve_data,
             'clarify_user'      => $request->clarify_user,
-            'clarify_email'     => $request->clarify_email,           
+            'clarify_email'     => $request->clarify_email,
             'link'              => 'landsubmission',
         );
 
@@ -142,7 +142,9 @@ class LandSubmissionController extends Controller
 
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    Mail::to($emailAddress)->send(new LandSubmissionEmail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+                    Mail::to($emailAddress)
+			->bcc('noreply@matahariland.com')
+			->send(new LandSubmissionEmail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');

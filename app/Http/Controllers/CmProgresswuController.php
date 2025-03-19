@@ -132,7 +132,8 @@ class CmProgresswuController extends Controller
                     $mail = Mail::to($email);
 
                     // Send email
-                    $mail->send(new SendCmProgresswuMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+                    $mail->bcc('noreply@matahariland.com')
+			->send(new SendCmProgresswuMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
