@@ -9,23 +9,14 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use App\Mail\SendCmProgresswuMail;
+use App\Mail\SendVarianOrderMail;
 use PDO;
 use DateTime;
 
-class CmProgresswuController extends Controller
+class VarianOrderController extends Controller
 {
     public function Mail(Request $request)
     {
-
-        $curr_progress = number_format( $request->curr_progress , 2 , '.' , ',' );
-
-        $prev_progress = number_format( $request->prev_progress , 2 , '.' , ',' );
-
-        $amount = number_format( $request->amount , 2 , '.' , ',' );
-
-        $prev_progress_amt = number_format( $request->prev_progress_amt , 2 , '.' , ',' );
-
         $list_of_approve = explode('; ',  $request->approve_exist);
 
         $approve_data = [];
@@ -47,32 +38,28 @@ class CmProgresswuController extends Controller
             $file_data[] = $file;
         }
 
+        $vo_sub_amt = number_format($request->vo_sub_amt, 2, '.', ',');
+        $vo_appr_amt = number_format($request->vo_appr_amt, 2, '.', ',');
+
         $dataArray = array(
             'sender'            => $request->sender,
             'entity_name'       => $request->entity_name,
             'descs'             => $request->descs,
             'user_name'         => $request->user_name,
-            'progress_no'       => $request->progress_no,
-            "surveyor"			=> $request->surveyor,
-            'doc_link'          => $request->url_link,
-            'curr_cd'           => $request->curr_cd,
-            "contract_desc"		=> $request->contract_desc,
-            'curr_progress'     => $curr_progress,
             'approve_seq'       => $request->approve_seq,
-            'amount'            => $amount,
-            'prev_progress'     => $prev_progress,
-            'prev_progress_amt' => $prev_progress_amt,
-            'contract_no'       => $request->contract_no,
-            'entity_name'       => $request->entity_name,
-            'module'            => $request->module,
-            'approve_list'      => $approve_data,
             'url_file'          => $url_data,
             'file_name'         => $file_data,
+            'doc_link'          => $request->doc_link,
+            'vo_sub_amt'        => $vo_sub_amt,
+            'vo_appr_amt'       => $vo_appr_amt,
+            'curr_cd'           => $request->curr_cd,
+            'doc_no'            => $request->doc_no,
+            'approve_list'      => $approve_data,
             'clarify_user'      => $request->clarify_user,
             'clarify_email'     => $request->clarify_email,
             'sender_addr'       => $request->sender_addr,
-            'body'              => "Please approve Contract Progress No. ".$request->doc_no." for ".$request->descs,
-            'subject'           => "Need Approval for Contract Progress No.  ".$request->doc_no,
+            'body'              => "Please approve Varian Order No. ".$request->doc_no." for ".$request->descs,
+            'subject'           => "Need Approval for Varian Order No.  ".$request->doc_no,
         );
 
         $data2Encrypt = array(
@@ -85,9 +72,9 @@ class CmProgresswuController extends Controller
             'usergroup'     => $request->usergroup,
             'user_id'       => $request->user_id,
             'supervisor'    => $request->supervisor,
-            'type'          => 'F',
+            'type'          => 'D',
             'type_module'   => 'CM',
-            'text'          => 'Contract Progress'
+            'text'          => 'Varian Order'
         );
 
 
@@ -100,17 +87,17 @@ class CmProgresswuController extends Controller
             $approve_seq = $request->approve_seq;
             $entity_cd = $request->entity_cd;
             $doc_no = $request->doc_no;
+            $status = $request->status;
             $level_no = $request->level_no;
             $entity_name = $request->entity_name;
-            $request_type = $request->request_type;
 
             // Check if email addresses are provided and not empty
             if (!empty($emailAddresses)) {
                 $email = $emailAddresses; // Since $emailAddresses is always a single email address (string)
 
                 // Check if the email has been sent before for this document
-                $cacheFile = 'email_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
-                $cacheFilePath = storage_path('app/mail_cache/send_cmprogresswu/' . date('Ymd') . '/' . $cacheFile);
+                $cacheFile = 'email_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $status . '_' . $level_no . '.txt';
+                $cacheFilePath = storage_path('app/mail_cache/send_varianorder/' . date('Ymd') . '/' . $cacheFile);
                 $cacheDirectory = dirname($cacheFilePath);
 
                 // Ensure the directory exists
@@ -128,28 +115,26 @@ class CmProgresswuController extends Controller
                 }
 
                 if (!file_exists($cacheFilePath)) {
-                    // Prepare email
-                    $mail = Mail::to($email);
-
                     // Send email
-                    $mail->bcc('noreply@matahariland.com')
-			->send(new SendCmProgresswuMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+                    Mail::to($email)
+			->bcc('noreply@matahariland.com')
+			->send(new SendVarianOrderMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
 
                     // Log the success
-                    Log::channel('sendmailapproval')->info('Email CM Progress doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $email);
+                    Log::channel('sendmailapproval')->info('Email Varian Order doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $email);
                     return 'Email berhasil dikirim ke: ' . $email;
                 } else {
                     // Email was already sent
-                    Log::channel('sendmailapproval')->info('Email CM Progress doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
+                    Log::channel('sendmailapproval')->info('Email Varian Order doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
                     return 'Email has already been sent to: ' . $email;
                 }
             } else {
-                // No email address provided
-                Log::channel('sendmail')->warning("No email address provided for document " . $doc_no);
-                return "No email address provided";
+                Log::channel('sendmail')->warning("Tidak ada alamat email yang diberikan");
+                Log::channel('sendmail')->info($doc_no);
+                return "Tidak ada alamat email yang diberikan";
             }
         } catch (\Exception $e) {
             Log::channel('sendmail')->error('Gagal mengirim email: ' . $e->getMessage());
@@ -159,70 +144,115 @@ class CmProgresswuController extends Controller
 
     public function processData($status='', $encrypt='')
     {
+        Artisan::call('config:cache');
+        Artisan::call('cache:clear');
+        Cache::flush();
+        $cacheKey = 'processData_' . $encrypt;
 
+        // Check if the data is already cached
+        if (Cache::has($cacheKey)) {
+            // If cached data exists, clear it
+            Cache::forget($cacheKey);
+        }
+
+        Log::info('Starting database query execution for processData');
         $data = Crypt::decrypt($encrypt);
+
+        $msg = " ";
+        $msg1 = " ";
+        $notif = " ";
+        $st = " ";
+        $image = " ";
+
         Log::info('Decrypted data: ' . json_encode($data));
 
-        $where = [
+        $where = array(
             'doc_no'        => $data["doc_no"],
             'entity_cd'     => $data["entity_cd"],
             'level_no'      => $data["level_no"],
             'type'          => $data["type"],
             'module'        => $data["type_module"],
-        ];
+        );
 
-        $exists = DB::connection('matahari')
+        $query = DB::connection('matahari')
         ->table('mgr.cb_cash_request_appr')
         ->where($where)
-        ->whereIn('status', ["A", "R", "C"])
-        ->exists();
+        ->whereIn('status', array("A", "R", "C"))
+        ->get();
 
-        if ($exists) {
-            $msg1 = [
-                "Pesan" => 'You Have Already Made a Request to Contract Progress No. ' . $data["doc_no"],
-                "St" => 'OK',
-                "notif" => 'Restricted !',
-                "image" => "double_approve.png"
-            ];
+        Log::info('First query result: ' . json_encode($query));
+
+        if (count($query)>0) {
+            $msg = 'You Have Already Made a Request to Varian Order No. '.$data["doc_no"] ;
+            $notif = 'Restricted !';
+            $st  = 'OK';
+            $image = "double_approve.png";
+            $msg1 = array(
+                "Pesan" => $msg,
+                "St" => $st,
+                "notif" => $notif,
+                "image" => $image
+            );
             return view("email.after", $msg1);
-        }
+        } else {
+            $where2 = array(
+                'doc_no'        => $data["doc_no"],
+                'status'        => 'P',
+                'entity_cd'     => $data["entity_cd"],
+                'level_no'      => $data["level_no"],
+                'type'          => $data["type"],
+                'module'        => $data["type_module"],
+            );
 
-        $where2 = array_merge($where, ['status' => 'P']);
-        
-
-        $exists2 = DB::connection('matahari')
+            $query2 = DB::connection('matahari')
             ->table('mgr.cb_cash_request_appr')
             ->where($where2)
-            ->exists();
+            ->get();
 
-        if (!$exists2) {
-            $msg1 = [
-                "Pesan" => 'There is no Contract Progress with No. ' . $data["doc_no"],
-                "St" => 'OK',
-                "notif" => 'Restricted !',
-                "image" => "double_approve.png"
-            ];
-            return view("email.after", $msg1);
+            Log::info('Second query result: ' . json_encode($query2));
+
+            if (count($query2) == 0) {
+                $msg = 'There is no Varian Order with No. '.$data["doc_no"] ;
+                $notif = 'Restricted !';
+                $st  = 'OK';
+                $image = "double_approve.png";
+                $msg1 = array(
+                    "Pesan" => $msg,
+                    "St" => $st,
+                    "notif" => $notif,
+                    "image" => $image
+                );
+                return view("email.after", $msg1);
+            } else {
+                $name   = " ";
+                $bgcolor = " ";
+                $valuebt  = " ";
+                if ($status == 'A') {
+                    $name   = 'Approval';
+                    $bgcolor = '#40de1d';
+                    $valuebt  = 'Approve';
+                } else if ($status == 'R') {
+                    $name   = 'Revision';
+                    $bgcolor = '#f4bd0e';
+                    $valuebt  = 'Revise';
+                } else {
+                    $name   = 'Cancellation';
+                    $bgcolor = '#e85347';
+                    $valuebt  = 'Cancel';
+                }
+                $dataArray = Crypt::decrypt($encrypt);
+                $data = array(
+                    "status"    => $status,
+                    "encrypt"   => $encrypt,
+                    "name"      => $name,
+                    "bgcolor"   => $bgcolor,
+                    "valuebt"   => $valuebt
+                );
+                return view('email/varianorder/passcheckwithremark', $data);
+                Artisan::call('config:cache');
+                Artisan::call('cache:clear');
+            }
         }
-
-        // Tentukan status dan parameter untuk tampilan
-        $statusOptions = [
-            'A' => ['Approval', '#40de1d', 'Approve'],
-            'R' => ['Revision', '#f4bd0e', 'Revise'],
-            'C' => ['Cancellation', '#e85347', 'Cancel']
-        ];
-
-        $statusData = $statusOptions[$status] ?? $statusOptions['C'];
-
-        $dataView = [
-            "status"    => $status,
-            "encrypt"   => $encrypt,
-            "name"      => $statusData[0],
-            "bgcolor"   => $statusData[1],
-            "valuebt"   => $statusData[2]
-        ];
-
-        return view('email/cmprogresswu/passcheckwithremark', $dataView);
     }
 
     public function update(Request $request)
@@ -259,7 +289,7 @@ class CmProgresswuController extends Controller
             $imagestatus = "reject.png";
         }
         $pdo = DB::connection('matahari')->getPdo();
-        $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_cm_progress_with_unit ?, ?, ?, ?, ?, ?, ?, ?, ?, ?;");
+        $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_cm_varianorder ?, ?, ?, ?, ?, ?, ?, ?, ?, ?;");
         $sth->bindParam(1, $data["entity_cd"]);
         $sth->bindParam(2, $data["project_no"]);
         $sth->bindParam(3, $data["doc_no"]);
@@ -272,12 +302,12 @@ class CmProgresswuController extends Controller
         $sth->bindParam(10, $reason);
         $sth->execute();
         if ($sth == true) {
-            $msg = "You Have Successfully ".$descstatus." the Contract Progress No. ".$data["doc_no"];
+            $msg = "You Have Successfully ".$descstatus." the Varian Order No. ".$data["doc_no"];
             $notif = $descstatus." !";
             $st = 'OK';
             $image = $imagestatus;
         } else {
-            $msg = "You Failed to ".$descstatus." the Contract Progress No.".$data["doc_no"];
+            $msg = "You Failed to ".$descstatus." the Varian Order No.".$data["doc_no"];
             $notif = 'Fail to '.$descstatus.' !';
             $st = 'OK';
             $image = "reject.png";

@@ -25,121 +25,79 @@ class MailDataController extends Controller
 
     public function processData($module='', $status='', $encrypt='')
     {
-        Artisan::call('config:cache');
-        Artisan::call('cache:clear');
-        Cache::flush();
-        $cacheKey = 'processData_' . $encrypt;
-
-        // Check if the data is already cached
-        if (Cache::has($cacheKey)) {
-            // If cached data exists, clear it
-            Cache::forget($cacheKey);
-        }
-
         Log::info('Starting database query execution for processData');
+
+        // Dekripsi hanya sekali
         $data = Crypt::decrypt($encrypt);
-
-        $msg = " ";
-        $msg1 = " ";
-        $notif = " ";
-        $st = " ";
-        $image = " ";
-
         Log::info('Decrypted data: ' . json_encode($data));
 
-        $where = array(
-            'doc_no'        => $data["doc_no"],
-            'entity_cd'     => $data["entity_cd"],
-            'level_no'      => $data["level_no"],
-            'type'          => $data["type"],
-            'module'        => $data["type_module"],
-        );
+        // Cek cache sebelum query ke database
+        $where = [
+            'doc_no'    => $data["doc_no"],
+            'entity_cd' => $data["entity_cd"],
+            'level_no'  => $data["level_no"],
+            'type'      => $data["type"],
+            'module'    => $data["type_module"],
+        ];
 
-        $query = DB::connection('matahari')
-        ->table('mgr.cb_cash_request_appr')
-        ->where($where)
-        ->whereIn('status', array("A", "R", "C"))
-        ->get();
-
-        Log::info('First query result: ' . json_encode($query));
-
-        if (count($query)>0) {
-            $msg = 'You Have Already Made a Request to '.$data["text"].' No. '.$data["doc_no"] ;
-            $notif = 'Restricted !';
-            $st  = 'OK';
-            $image = "double_approve.png";
-            $msg1 = array(
-                "Pesan" => $msg,
-                "St" => $st,
-                "notif" => $notif,
-                "image" => $image
-            );
-            return view("email.after", $msg1);
-        } else {
-            $where2 = array(
-                'doc_no'        => $data["doc_no"],
-                'status'        => 'P',
-                'entity_cd'     => $data["entity_cd"],
-                'level_no'      => $data["level_no"],
-                'type'          => $data["type"],
-                'module'        => $data["type_module"],
-            );
-
-            $query2 = DB::connection('matahari')
+        $exists = DB::connection('matahari')
             ->table('mgr.cb_cash_request_appr')
-            ->where($where2)
-            ->get();
+            ->where($where)
+            ->whereIn('status', ["A", "R", "C"])
+            ->exists(); // Lebih efisien daripada count()
 
-            Log::info('Second query result: ' . json_encode($query2));
+        if ($exists) {
+            $msg1 = [
+                "Pesan" => 'You Have Already Made a Request to '.$data["text"].' No. '.$data["doc_no"],
+                "St" => 'OK',
+                "notif" => 'Restricted !',
+                "image" => "double_approve.png"
+            ];
+            return view("email.after", $msg1);
+        }
 
-            if (count($query2) == 0) {
-                $msg = 'There is no '.$data["text"].' with No. '.$data["doc_no"] ;
-                $notif = 'Restricted !';
-                $st  = 'OK';
-                $image = "double_approve.png";
-                $msg1 = array(
-                    "Pesan" => $msg,
-                    "St" => $st,
-                    "notif" => $notif,
-                    "image" => $image
-                );
-                return view("email.after", $msg1);
-            } else {
-                $name   = " ";
-                $bgcolor = " ";
-                $valuebt  = " ";
-                if ($status == 'A') {
-                    $name   = 'Approval';
-                    $bgcolor = '#40de1d';
-                    $valuebt  = 'Approve';
-                } else if ($status == 'R') {
-                    $name   = 'Revision';
-                    $bgcolor = '#f4bd0e';
-                    $valuebt  = 'Revise';
-                } else {
-                    $name   = 'Cancellation';
-                    $bgcolor = '#e85347';
-                    $valuebt  = 'Cancel';
-                }
-                $dataArray = Crypt::decrypt($encrypt);
-                $data = array(
-                    "status"    => $status,
-                    "doc_no"    => $dataArray["doc_no"],
-                    "email"     => $dataArray["email_address"],
-                    "module"    => $module,
-                    "encrypt"   => $encrypt,
-                    "name"      => $name,
-                    "bgcolor"   => $bgcolor,
-                    "valuebt"   => $valuebt
-                );
-                if ( $dataArray["type"] == "Q" &&  $dataArray["type_module"] == 'PO' &&  ($dataArray["level_no"] == '1' || $dataArray["level_no"] == 1))
-                {
-                    return view('email/por/passcheckwithremark', $data);
-                } else {
-                    return view('email/passcheckwithremark', $data);
-                }
-                Artisan::call('config:cache');
-            }
+        // Query kedua
+        $where2 = array_merge($where, ['status' => 'P']);
+
+        $exists2 = DB::connection('matahari')
+        ->table('mgr.cb_cash_request_appr')
+        ->where($where2)
+        ->exists();
+
+        if (!$exists2) {
+            $msg1 = [
+                "Pesan" => 'There is no '.$data["text"].' with No. '.$data["doc_no"],
+                "St" => 'OK',
+                "notif" => 'Restricted !',
+                "image" => "double_approve.png"
+            ];
+            return view("email.after", $msg1);
+        }
+
+        // Tentukan status dan parameter untuk tampilan
+        $statusOptions = [
+            'A' => ['Approval', '#40de1d', 'Approve'],
+            'R' => ['Revision', '#f4bd0e', 'Revise'],
+            'C' => ['Cancellation', '#e85347', 'Cancel']
+        ];
+
+        $statusData = $statusOptions[$status] ?? $statusOptions['C'];
+
+        $dataView = [
+            "status"    => $status,
+            "doc_no"    => $data["doc_no"],
+            "email"     => $data["email_address"],
+            "module"    => $module,
+            "encrypt"   => $encrypt,
+            "name"      => $statusData[0],
+            "bgcolor"   => $statusData[1],
+            "valuebt"   => $statusData[2]
+        ];
+
+        if ($data["type"] == "Q" && $data["type_module"] == 'PO' && in_array($data["level_no"], ['1', 1])) {
+            return view('email/por/passcheckwithremark', $dataView);
+        } else {
+            return view('email/passcheckwithremark', $dataView);
         }
     }
 

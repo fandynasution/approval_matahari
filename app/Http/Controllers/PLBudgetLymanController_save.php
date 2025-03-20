@@ -9,11 +9,11 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use App\Mail\SendPLRevisionMail;
+use App\Mail\SendPLLymanMail;
 use PDO;
 use DateTime;
 
-class PLBudgetRevisionController extends Controller
+class PLBudgetLymanController extends Controller
 {
     public function Mail(Request $request)
     {
@@ -43,7 +43,6 @@ class PLBudgetRevisionController extends Controller
             'descs'         => $request->descs,
             'entity_name'   => $request->entity_name,
             'project_name'  => $request->project_name,
-            'trx_type'      => $request->trx_type,
             'amount'        => $amount,
             'doc_no'        => $request->doc_no,
             'user_name'     => $request->user_name,
@@ -55,8 +54,8 @@ class PLBudgetRevisionController extends Controller
             'clarify_user'  => $request->clarify_user,
             'clarify_email' => $request->clarify_email,
             'sender_addr'   => $request->sender_addr,
-            'body'          => "Please approve RAB Budget Revision No. ".$request->doc_no." project ".$request->project_name. " with Amount ".$amount,
-            'subject'       => "Need Approval for RAB Budget Revision No. ".$request->doc_no,
+            'body'          => "Please approve RAB Budget No. ".$request->doc_no." project ".$request->project_name. " with Amount ".$amount,
+            'subject'       => "Need Approval for RAB Budget No. ".$request->doc_no,
         );
 
         $data2Encrypt = array(
@@ -65,12 +64,11 @@ class PLBudgetRevisionController extends Controller
             'email_address' => $request->email_addr,
             'entity_name'   => $request->entity_name,
             'level_no'      => $request->level_no,
-            'trx_type'      => $request->trx_type,
             'doc_no'        => $request->doc_no,
             'user_id'       => $request->user_id,
-            'type'          => 'Y',
+            'type'          => 'X',
             'type_module'   => 'PL',
-            'text'          => 'Budget Revision'
+            'text'          => 'Budget Lyman'
         );
 
         // Melakukan enkripsi pada $dataArray
@@ -91,7 +89,7 @@ class PLBudgetRevisionController extends Controller
 
                 // Check if the email has been sent before for this document
                 $cacheFile = 'email_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $status . '_' . $level_no . '.txt';
-                $cacheFilePath = storage_path('app/mail_cache/send_pl_budget_revision/' . date('Ymd') . '/' . $cacheFile);
+                $cacheFilePath = storage_path('app/mail_cache/send_pl_budget_lyman/' . date('Ymd') . '/' . $cacheFile);
                 $cacheDirectory = dirname($cacheFilePath);
 
                 // Ensure the directory exists
@@ -112,17 +110,17 @@ class PLBudgetRevisionController extends Controller
                     // Send email
                     Mail::to($email)
 			->bcc('noreply@matahariland.com')
-			->send(new SendPLRevisionMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
+			->send(new SendPLLymanMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent
                     file_put_contents($cacheFilePath, 'sent');
 
                     // Log the success
-                    Log::channel('sendmailapproval')->info('Email PL Budget Revision doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $email);
+                    Log::channel('sendmailapproval')->info('Email RAB Budget doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $email);
                     return 'Email berhasil dikirim ke: ' . $email;
                 } else {
                     // Email was already sent
-                    Log::channel('sendmailapproval')->info('Email PL Budget Revision doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
+                    Log::channel('sendmailapproval')->info('Email RAB Budget doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
                     return 'Email has already been sent to: ' . $email;
                 }
             } else {
@@ -138,72 +136,118 @@ class PLBudgetRevisionController extends Controller
 
     public function processData($status='', $encrypt='')
     {
+        Artisan::call('config:cache');
+        Artisan::call('cache:clear');
+        Cache::flush();
+        $cacheKey = 'processData_' . $encrypt;
 
+        // Check if the data is already cached
+        if (Cache::has($cacheKey)) {
+            // If cached data exists, clear it
+            Cache::forget($cacheKey);
+        }
+
+        Log::info('Starting database query execution for processData');
         $data = Crypt::decrypt($encrypt);
+
+        $msg = " ";
+        $msg1 = " ";
+        $notif = " ";
+        $st = " ";
+        $image = " ";
+
         Log::info('Decrypted data: ' . json_encode($data));
 
-        $where = [
+        $where = array(
             'doc_no'        => $data["doc_no"],
             'entity_cd'     => $data["entity_cd"],
             'level_no'      => $data["level_no"],
             'type'          => $data["type"],
-            'trx_type'      => $data["trx_type"],
             'module'        => $data["type_module"],
-        ];
+        );
 
-        $exists = DB::connection('matahari')
+        $query = DB::connection('matahari')
         ->table('mgr.cb_cash_request_appr')
         ->where($where)
-        ->whereIn('status', ["A", "R", "C"])
-        ->exists();
+        ->whereIn('status', array("A", "R", "C"))
+        ->get();
 
-        if ($exists) {
-            $msg1 = [
-                "Pesan" => 'You Have Already Made a Request to PL Budget Revision No. '.$data["doc_no"],
-                "St" => 'OK',
-                "notif" => 'Restricted !',
-                "image" => "double_approve.png"
-            ];
+        Log::info('First query result: ' . json_encode($query));
+
+        if (count($query)>0) {
+            $msg = 'You Have Already Made a Request to RAB Budget No. '.$data["doc_no"] ;
+            $notif = 'Restricted !';
+            $st  = 'OK';
+            $image = "double_approve.png";
+            $msg1 = array(
+                "Pesan" => $msg,
+                "St" => $st,
+                "notif" => $notif,
+                "image" => $image,
+                "entity_name"   => $data["entity_name"]
+            );
             return view("email.after", $msg1);
-        }
+        } else {
+            $where2 = array(
+                'doc_no'        => $data["doc_no"],
+                'status'        => 'P',
+                'entity_cd'     => $data["entity_cd"],
+                'level_no'      => $data["level_no"],
+                'type'          => $data["type"],
+                'module'        => $data["type_module"],
+            );
 
-        $where2 = array_merge($where, ['status' => 'P']);
-        
-
-        $exists2 = DB::connection('matahari')
+            $query2 = DB::connection('matahari')
             ->table('mgr.cb_cash_request_appr')
             ->where($where2)
-            ->exists();
+            ->get();
 
-        if (!$exists2) {
-            $msg1 = [
-                "Pesan" => 'There is no PL Budget Revision with No. '.$data["doc_no"],
-                "St" => 'OK',
-                "notif" => 'Restricted !',
-                "image" => "double_approve.png"
-            ];
-            return view("email.after", $msg1);
+            Log::info('Second query result: ' . json_encode($query2));
+
+            if (count($query2) == 0) {
+                $msg = 'There is no RAB Budget with No. '.$data["doc_no"] ;
+                $notif = 'Restricted !';
+                $st  = 'OK';
+                $image = "double_approve.png";
+                $msg1 = array(
+                    "Pesan" => $msg,
+                    "St" => $st,
+                    "notif" => $notif,
+                    "image" => $image,
+                    "entity_name"   => $data["entity_name"]
+                );
+                return view("email.after", $msg1);
+            } else {
+                $name   = " ";
+                $bgcolor = " ";
+                $valuebt  = " ";
+                if ($status == 'A') {
+                    $name   = 'Approval';
+                    $bgcolor = '#40de1d';
+                    $valuebt  = 'Approve';
+                } else if ($status == 'R') {
+                    $name   = 'Revision';
+                    $bgcolor = '#f4bd0e';
+                    $valuebt  = 'Revise';
+                } else {
+                    $name   = 'Cancellation';
+                    $bgcolor = '#e85347';
+                    $valuebt  = 'Cancel';
+                }
+                $dataArray = Crypt::decrypt($encrypt);
+                $data = array(
+                    "status"    => $status,
+                    "encrypt"   => $encrypt,
+                    "name"      => $name,
+                    "bgcolor"   => $bgcolor,
+                    "valuebt"   => $valuebt,
+                    "entity_name"   => $dataArray["entity_name"]
+                );
+                return view('email/plbudget/passcheckwithremark', $data);
+                Artisan::call('config:cache');
+                Artisan::call('cache:clear');
+            }
         }
-
-        // Tentukan status dan parameter untuk tampilan
-        $statusOptions = [
-            'A' => ['Approval', '#40de1d', 'Approve'],
-            'R' => ['Revision', '#f4bd0e', 'Revise'],
-            'C' => ['Cancellation', '#e85347', 'Cancel']
-        ];
-
-        $statusData = $statusOptions[$status] ?? $statusOptions['C'];
-
-        $dataView = [
-            "status"        => $status,
-            "encrypt"       => $encrypt,
-            "name"          => $statusData[0],
-            "bgcolor"       => $statusData[1],
-            "valuebt"       => $statusData[2],
-            "entity_name"   => $data["entity_name"]
-        ];
-
-        return view('email/plrevision/passcheckwithremark', $dataView);
     }
 
     public function update(Request $request)
@@ -240,22 +284,21 @@ class PLBudgetRevisionController extends Controller
             $imagestatus = "reject.png";
         }
         $pdo = DB::connection('matahari')->getPdo();
-        $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_pl_budget_revision ?, ?, ?, ?, ?, ?, ?;");
+        $sth = $pdo->prepare("SET NOCOUNT ON; EXEC mgr.xrl_send_mail_approval_pl_budget_lyman ?, ?, ?, ?, ?, ?;");
         $sth->bindParam(1, $data["entity_cd"]);
         $sth->bindParam(2, $data["project_no"]);
         $sth->bindParam(3, $data["doc_no"]);
-        $sth->bindParam(4, $data["trx_type"]);
-        $sth->bindParam(5, $status);
-        $sth->bindParam(6, $data["level_no"]);
-        $sth->bindParam(7, $data["user_id"]);
+        $sth->bindParam(4, $status);
+        $sth->bindParam(5, $data["level_no"]);
+        $sth->bindParam(6, $data["user_id"]);
         $sth->execute();
         if ($sth == true) {
-            $msg = "You Have Successfully ".$descstatus." the PL Budget Revision No. ".$data["doc_no"];
+            $msg = "You Have Successfully ".$descstatus." the RAB Budget No. ".$data["doc_no"];
             $notif = $descstatus." !";
             $st = 'OK';
             $image = $imagestatus;
         } else {
-            $msg = "You Failed to ".$descstatus." the PL Budget Revision No.".$data["doc_no"];
+            $msg = "You Failed to ".$descstatus." the RAB Budget No.".$data["doc_no"];
             $notif = 'Fail to '.$descstatus.' !';
             $st = 'OK';
             $image = "reject.png";

@@ -159,8 +159,26 @@ class CmProgresswuController extends Controller
 
     public function processData($status='', $encrypt='')
     {
+        Artisan::call('config:cache');
+        Artisan::call('cache:clear');
+        Cache::flush();
+        $cacheKey = 'processData_' . $encrypt;
 
+        // Check if the data is already cached
+        if (Cache::has($cacheKey)) {
+            // If cached data exists, clear it
+            Cache::forget($cacheKey);
+        }
+
+        Log::info('Starting database query execution for processData');
         $data = Crypt::decrypt($encrypt);
+
+        $msg = " ";
+        $msg1 = " ";
+        $notif = " ";
+        $st = " ";
+        $image = " ";
+
         Log::info('Decrypted data: ' . json_encode($data));
 
         $where = [
@@ -171,58 +189,85 @@ class CmProgresswuController extends Controller
             'module'        => $data["type_module"],
         ];
 
-        $exists = DB::connection('matahari')
-        ->table('mgr.cb_cash_request_appr')
-        ->where($where)
-        ->whereIn('status', ["A", "R", "C"])
-        ->exists();
-
-        if ($exists) {
-            $msg1 = [
-                "Pesan" => 'You Have Already Made a Request to Contract Progress No. ' . $data["doc_no"],
-                "St" => 'OK',
-                "notif" => 'Restricted !',
-                "image" => "double_approve.png"
-            ];
-            return view("email.after", $msg1);
-        }
-
-        $where2 = array_merge($where, ['status' => 'P']);
-        
-
-        $exists2 = DB::connection('matahari')
+        $query = DB::connection('matahari')
             ->table('mgr.cb_cash_request_appr')
-            ->where($where2)
-            ->exists();
+            ->where($where)
+            ->whereIn('status', ["A", "R", "C"])
+            ->get();
 
-        if (!$exists2) {
+        Log::info('First query result: ' . json_encode($query));
+
+        if (count($query) > 0) {
+            $msg = 'You Have Already Made a Request to Contract Progress No. ' . $data["doc_no"];
+            $notif = 'Restricted!';
+            $st  = 'OK';
+            $image = "double_approve.png";
             $msg1 = [
-                "Pesan" => 'There is no Contract Progress with No. ' . $data["doc_no"],
-                "St" => 'OK',
-                "notif" => 'Restricted !',
-                "image" => "double_approve.png"
+                "Pesan" => $msg,
+                "St" => $st,
+                "notif" => $notif,
+                "image" => $image
             ];
             return view("email.after", $msg1);
+        } else {
+            $where2 = [
+                'doc_no'        => $data["doc_no"],
+                'status'        => 'P',
+                'entity_cd'     => $data["entity_cd"],
+                'level_no'      => $data["level_no"],
+                'type'          => $data["type"],
+                'module'        => $data["type_module"],
+            ];
+
+            $query2 = DB::connection('matahari')
+                ->table('mgr.cb_cash_request_appr')
+                ->where($where2)
+                ->get();
+
+            Log::info('Second query result: ' . json_encode($query2));
+
+            if (count($query2) == 0) {
+                $msg = 'There is no Contract Progress with No. ' . $data["doc_no"];
+                $notif = 'Restricted!';
+                $st  = 'OK';
+                $image = "double_approve.png";
+                $msg1 = [
+                    "Pesan" => $msg,
+                    "St" => $st,
+                    "notif" => $notif,
+                    "image" => $image
+                ];
+                return view("email.after", $msg1);
+            } else {
+                $name   = " ";
+                $bgcolor = " ";
+                $valuebt  = " ";
+                if ($status == 'A') {
+                    $name   = 'Approval';
+                    $bgcolor = '#40de1d';
+                    $valuebt  = 'Approve';
+                } elseif ($status == 'R') {
+                    $name   = 'Revision';
+                    $bgcolor = '#f4bd0e';
+                    $valuebt  = 'Revise';
+                } else {
+                    $name   = 'Cancellation';
+                    $bgcolor = '#e85347';
+                    $valuebt  = 'Cancel';
+                }
+                $dataArray = Crypt::decrypt($encrypt);
+                $data = [
+                    "status"    => $status,
+                    "encrypt"   => $encrypt,
+                    "name"      => $name,
+                    "bgcolor"   => $bgcolor,
+                    "valuebt"   => $valuebt
+                ];
+                Artisan::call('config:cache');
+                Artisan::call('cache:clear');
+                return view('email/cmprogresswu/passcheckwithremark', $data);
+            }
         }
-
-        // Tentukan status dan parameter untuk tampilan
-        $statusOptions = [
-            'A' => ['Approval', '#40de1d', 'Approve'],
-            'R' => ['Revision', '#f4bd0e', 'Revise'],
-            'C' => ['Cancellation', '#e85347', 'Cancel']
-        ];
-
-        $statusData = $statusOptions[$status] ?? $statusOptions['C'];
-
-        $dataView = [
-            "status"    => $status,
-            "encrypt"   => $encrypt,
-            "name"      => $statusData[0],
-            "bgcolor"   => $statusData[1],
-            "valuebt"   => $statusData[2]
-        ];
-
-        return view('email/cmprogresswu/passcheckwithremark', $dataView);
     }
 
     public function update(Request $request)
