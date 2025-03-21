@@ -220,7 +220,6 @@ class CbPPuController extends Controller
             "status"    => $status,
             "doc_no"    => $data["doc_no"],
             "email"     => $data["email_address"],
-            "module"    => $module,
             "encrypt"   => $encrypt,
             "name"      => $statusData[0],
             "bgcolor"   => $statusData[1],
