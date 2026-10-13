@@ -93,16 +93,24 @@
                                     <br>
                                     <p style="text-align:left;margin-bottom: 15px; color: #000000; font-size: 16px;">
                                         In case you need some clarification, kindly approach : <br>
+                                        @if(!empty($dataArray['clarify_email']))
                                         <a href="mailto:{{ $dataArray['clarify_email'] }}" style="text-decoration: none; color: inherit;">
                                             {{ $dataArray['clarify_user'] }}
                                         </a>
+                                        @else
+                                            {{ $dataArray['clarify_user'] }}
+                                        @endif
                                     </p>
                     
                                     <p style="text-align:left;margin-bottom: 15px; color: #000000; font-size: 16px;">
                                         <b>Thank you,</b><br>
+                                        @if(!empty($dataArray['sender_addr']))
                                         <a href="mailto:{{ $dataArray['sender_addr'] }}" style="text-decoration: none; color: inherit;">
                                             {{ $dataArray['sender'] }}
                                         </a>
+                                        @else
+                                            {{ $dataArray['sender'] }}
+                                        @endif
                                     </p>
                                     @php
                                         $hasApproval = false;

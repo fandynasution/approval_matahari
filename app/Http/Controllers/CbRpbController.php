@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\Concerns\SendsApprovalMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
@@ -13,8 +14,13 @@ use App\Mail\SendCbRpbMail;
 
 class CbRpbController extends Controller
 {
+    use SendsApprovalMail;
+
     public function processModule($data)
     {
+        // Key yang tidak dikirim bernilai null, bukan error undefined index
+        $data = new \Illuminate\Support\Fluent($data);
+
         if (strpos($data["rpb_descs"], "\n") !== false) {
             $rpb_descs = str_replace("\n", ' (', $data["rpb_descs"]) . ')';
         } else {
@@ -79,74 +85,15 @@ class CbRpbController extends Controller
             'text'          => 'Recapitulation Bank'
         );
 
-        // Melakukan enkripsi pada $dataArray
-        $encryptedData = Crypt::encrypt($data2Encrypt);
-
-        try {
-            $emailAddresses = strtolower($data["email_addr"]);
-            $approve_seq = $data["approve_seq"];
-            $entity_cd = $data["entity_cd"];
-            $doc_no = $data["doc_no"];
-            $level_no = $data["level_no"];
-            $entity_name = $data["entity_name"];
-
-            // Check if email addresses are provided and not empty
-            if (!empty($emailAddresses)) {
-                $email = $emailAddresses; // Since $emailAddresses is always a single email address (string)
-
-                // Check if the email has been sent before for this document
-                $cacheFile = 'email_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
-                $cacheFilePath = storage_path('app/mail_cache/send_cbrpb/' . date('Ymd') . '/' . $cacheFile);
-                $cacheDirectory = dirname($cacheFilePath);
-
-                // Ensure the directory exists
-                if (!file_exists($cacheDirectory)) {
-                    mkdir($cacheDirectory, 0755, true);
-                }
-
-                // Acquire an exclusive lock
-                $lockFile = $cacheFilePath . '.lock';
-                $lockHandle = fopen($lockFile, 'w');
-                if (!flock($lockHandle, LOCK_EX)) {
-                    // Failed to acquire lock, handle appropriately
-                    fclose($lockHandle);
-                    throw new Exception('Failed to acquire lock');
-                }
-
-                if (!file_exists($cacheFilePath)) {
-                    // Send email
-                    $mail = Mail::to($email);
-
-                    // Tambahkan CC hanya jika email tujuan adalah 'iwan@matahariland.com'
-                    if ($email === 'iwan@matahariland.com') {
-                        $mail->cc('iwan@matahariland.co.id');
-                    }
-
-                    // Tambahkan BCC
-                    $mail->bcc(['noreply@matahariland.com'])
-    		     ->send(new SendCbRpbMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
-
-
-                    // Mark email as sent
-                    file_put_contents($cacheFilePath, 'sent');
-
-                    // Log the success
-                    Log::channel('sendmailapproval')->info('Email CB RPB doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $email);
-                    return 'Email berhasil dikirim ke: ' . $email;
-                } else {
-                    // Email was already sent
-                    Log::channel('sendmailapproval')->info('Email CB RPB doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
-                    return 'Email has already been sent to: ' . $email;
-                }
-            } else {
-                // No email address provided
-                Log::channel('sendmail')->warning("No email address provided for document " . $doc_no);
-                return "No email address provided";
-            }
-        } catch (\Exception $e) {
-            Log::channel('sendmail')->error('Gagal mengirim email: ' . $e->getMessage());
-            return "Gagal mengirim email: " . $e->getMessage();
-        }
+        return $this->sendApprovalMail('CB RPB', 'send_cbrpb', SendCbRpbMail::class, [
+            'email'       => $data["email_addr"],
+            'entity_cd'   => $data["entity_cd"],
+            'doc_no'      => $data["doc_no"],
+            'level_no'    => $data["level_no"],
+            'approve_seq' => $data["approve_seq"],
+            'entity_name' => $data["entity_name"],
+            'cache_key'   => [$data["approve_seq"], $data["entity_cd"], $data["doc_no"], $data["level_no"]],
+        ], $dataArray, $data2Encrypt, ['iwan@matahariland.com' => 'iwan@matahariland.co.id']);
     }
 
     public function update($status, $encrypt, $reason)

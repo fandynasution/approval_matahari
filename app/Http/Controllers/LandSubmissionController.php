@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\Concerns\SendsApprovalMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
@@ -13,6 +14,8 @@ use App\Mail\LandSubmissionEmail;
 
 class LandSubmissionController extends Controller
 {
+    use SendsApprovalMail;
+
     public function mail(Request $request)
     {
         $list_of_urls = explode(';', $request->url_file);
@@ -109,64 +112,15 @@ class LandSubmissionController extends Controller
         Artisan::call('config:cache');
         Artisan::call('cache:clear');
         Cache::flush();
-        // Melakukan enkripsi pada $dataArray
-        $encryptedData = Crypt::encrypt($data2Encrypt);
-
-        try {
-            $emailAddress = strtolower($request->email_addr);
-            $approved_seq = $request->approved_seq;
-            $entity_cd = $request->entity_cd;
-            $doc_no = $request->doc_no;
-            $level_no = $request->level_no;
-            $entity_name = $request->entity_name;
-
-            if (!empty($emailAddress)) {
-                // Check if the email has been sent before for this document
-                $cacheFile = 'email_sent_' . $approved_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $level_no . '.txt';
-                $cacheFilePath = storage_path('app/mail_cache/send_lm_submission/' . date('Ymd') . '/' . $cacheFile);
-                $cacheDirectory = dirname($cacheFilePath);
-
-                // Ensure the directory exists
-                if (!file_exists($cacheDirectory)) {
-                    mkdir($cacheDirectory, 0755, true);
-                }
-
-                // Acquire an exclusive lock
-                $lockFile = $cacheFilePath . '.lock';
-                $lockHandle = fopen($lockFile, 'w');
-                if (!flock($lockHandle, LOCK_EX)) {
-                    // Failed to acquire lock, handle appropriately
-                    fclose($lockHandle);
-                    throw new Exception('Failed to acquire lock');
-                }
-
-                if (!file_exists($cacheFilePath)) {
-                    // Send email
-                    Mail::to($emailAddress)
-			->bcc('noreply@matahariland.com')
-			->send(new LandSubmissionEmail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
-
-                    // Mark email as sent
-                    file_put_contents($cacheFilePath, 'sent');
-
-                    // Log the success
-                    Log::channel('sendmailapproval')->info('Email Land Submission doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $emailAddress);
-                    return 'Email berhasil dikirim ke: ' . $emailAddress;
-                } else {
-                    // Email was already sent
-                    Log::channel('sendmailapproval')->info('Email Land Submission doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $emailAddress);
-                    return 'Email has already been sent to: ' . $emailAddress;
-                }
-            } else {
-                // No email address provided
-                Log::channel('sendmail')->warning("No email address provided for document " . $doc_no);
-                return "No email address provided";
-            }
-        } catch (\Exception $e) {
-            // Error occurred
-            Log::channel('sendmail')->error('Failed to send email: ' . $e->getMessage());
-            return "Failed to send email: " . $e->getMessage();
-        }
+        return $this->sendApprovalMail('Land Submission', 'send_lm_submission', LandSubmissionEmail::class, [
+            'email'       => $request->email_addr,
+            'entity_cd'   => $request->entity_cd,
+            'doc_no'      => $request->doc_no,
+            'level_no'    => $request->level_no,
+            'approve_seq' => $request->approved_seq,
+            'entity_name' => $request->entity_name,
+            'cache_key'   => [$request->approved_seq, $request->entity_cd, $request->doc_no, $request->level_no],
+        ], $dataArray, $data2Encrypt);
     }
 
     public function processData($status='', $encrypt='')

@@ -9,18 +9,31 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Concerns\SendsApprovalMail;
 
 class MailDataController extends Controller
 {
+    use SendsApprovalMail;
+
     public function receive(Request $request)
     {
         $dataFromExternal = $request->all();
         $module = $request->module;
         $controllerName = 'App\\Http\\Controllers\\' . $module . 'Controller';
         $methodName = 'processModule';
-        $controllerInstance = new $controllerName();
-        $result = $controllerInstance->$methodName($dataFromExternal);
-        return $result;
+
+        try {
+            $controllerInstance = new $controllerName();
+            return $controllerInstance->$methodName($dataFromExternal);
+        } catch (\Throwable $e) {
+            $this->approvalLog((string) $module)->error('Email ' . $module . ' doc_no ' . ($dataFromExternal['doc_no'] ?? '') . ' Entity ' . ($dataFromExternal['entity_cd'] ?? '') . ' - GAGAL diproses: ' . $e->getMessage(), [
+                'module'     => $module,
+                'email_addr' => $dataFromExternal['email_addr'] ?? null,
+                'exception'  => get_class($e),
+                'file'       => $e->getFile() . ':' . $e->getLine(),
+            ]);
+            return 'Gagal mengirim email: ' . $e->getMessage();
+        }
     }
 
     public function processData($module='', $status='', $encrypt='')

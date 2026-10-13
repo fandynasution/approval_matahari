@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\Concerns\SendsApprovalMail;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Crypt;
@@ -15,6 +16,8 @@ use DateTime;
 
 class PLBudgetLymanController extends Controller
 {
+    use SendsApprovalMail;
+
     public function Mail(Request $request)
     {
         $amount = number_format( $request->amount , 2 , '.' , ',' );
@@ -71,67 +74,15 @@ class PLBudgetLymanController extends Controller
             'text'          => 'Budget Lyman'
         );
 
-        // Melakukan enkripsi pada $dataArray
-        $encryptedData = Crypt::encrypt($data2Encrypt);
-
-        try {
-            $emailAddresses = strtolower($request->email_addr);
-            $approve_seq = $request->approve_seq;
-            $entity_cd = $request->entity_cd;
-            $doc_no = $request->doc_no;
-            $status = $request->status;
-            $level_no = $request->level_no;
-            $entity_name = $request->entity_name;
-
-            // Check if email addresses are provided and not empty
-            if (!empty($emailAddresses)) {
-                $email = $emailAddresses; // Since $emailAddresses is always a single email address (string)
-
-                // Check if the email has been sent before for this document
-                $cacheFile = 'email_sent_' . $approve_seq . '_' . $entity_cd . '_' . $doc_no . '_' . $status . '_' . $level_no . '.txt';
-                $cacheFilePath = storage_path('app/mail_cache/send_pl_budget_lyman/' . date('Ymd') . '/' . $cacheFile);
-                $cacheDirectory = dirname($cacheFilePath);
-
-                // Ensure the directory exists
-                if (!file_exists($cacheDirectory)) {
-                    mkdir($cacheDirectory, 0755, true);
-                }
-
-                // Acquire an exclusive lock
-                $lockFile = $cacheFilePath . '.lock';
-                $lockHandle = fopen($lockFile, 'w');
-                if (!flock($lockHandle, LOCK_EX)) {
-                    // Failed to acquire lock, handle appropriately
-                    fclose($lockHandle);
-                    throw new Exception('Failed to acquire lock');
-                }
-
-                if (!file_exists($cacheFilePath)) {
-                    // Send email
-                    Mail::to($email)
-			->bcc('noreply@matahariland.com')
-			->send(new SendPLLymanMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
-
-                    // Mark email as sent
-                    file_put_contents($cacheFilePath, 'sent');
-
-                    // Log the success
-                    Log::channel('sendmailapproval')->info('Email RAB Budget doc_no '.$doc_no.' Entity ' . $entity_cd.' berhasil dikirim ke: ' . $email);
-                    return 'Email berhasil dikirim ke: ' . $email;
-                } else {
-                    // Email was already sent
-                    Log::channel('sendmailapproval')->info('Email RAB Budget doc_no '.$doc_no.' Entity ' . $entity_cd.' already sent to: ' . $email);
-                    return 'Email has already been sent to: ' . $email;
-                }
-            } else {
-                Log::channel('sendmail')->warning("Tidak ada alamat email yang diberikan");
-                Log::channel('sendmail')->info($doc_no);
-                return "Tidak ada alamat email yang diberikan";
-            }
-        } catch (\Exception $e) {
-            Log::channel('sendmail')->error('Gagal mengirim email: ' . $e->getMessage());
-            return "Gagal mengirim email: " . $e->getMessage();
-        }
+        return $this->sendApprovalMail('RAB Budget', 'send_pl_budget_lyman', SendPLLymanMail::class, [
+            'email'       => $request->email_addr,
+            'entity_cd'   => $request->entity_cd,
+            'doc_no'      => $request->doc_no,
+            'level_no'    => $request->level_no,
+            'approve_seq' => $request->approve_seq,
+            'entity_name' => $request->entity_name,
+            'cache_key'   => [$request->approve_seq, $request->entity_cd, $request->doc_no, $request->status, $request->level_no],
+        ], $dataArray, $data2Encrypt);
     }
 
     public function processData($status='', $encrypt='')
