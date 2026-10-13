@@ -123,7 +123,7 @@ class CbRpbController extends Controller
                     }
 
                     // Tambahkan BCC
-                    $mail->bcc(['muhamad.zidan@ifca.co.id', 'noreply@matahariland.com'])
+                    $mail->bcc(['noreply@matahariland.com'])
     		     ->send(new SendCbRpbMail($encryptedData, $dataArray, 'IFCA SOFTWARE - ' . $entity_name));
 
 
