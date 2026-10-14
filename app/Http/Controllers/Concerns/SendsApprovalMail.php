@@ -167,7 +167,7 @@ trait SendsApprovalMail
             if ($cc) {
                 $mail->cc($cc);
             }
-            $mail->bcc('noreply@matahariland.com')->send($mailable);
+            $mail->bcc('noreply@agungintiland.com')->send($mailable);
 
             file_put_contents($cacheFilePath, 'sent');
 

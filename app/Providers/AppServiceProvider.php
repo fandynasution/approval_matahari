@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Semua email yang dikirim aplikasi selalu di-BCC ke noreply
         Event::listen(MessageSending::class, function (MessageSending $event) {
-            $bcc = 'noreply@matahariland.com';
+            $bcc = 'noreply@agungintiland.com';
             $message = $event->message;
 
             $existing = array_merge($message->getTo(), $message->getCc(), $message->getBcc());
