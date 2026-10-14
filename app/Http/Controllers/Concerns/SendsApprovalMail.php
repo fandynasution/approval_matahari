@@ -167,11 +167,11 @@ trait SendsApprovalMail
             if ($cc) {
                 $mail->cc($cc);
             }
-            $mail->bcc('noreply@agungintiland.com')->send($mailable);
+            $sent = $mail->bcc('noreply@agungintiland.com')->send($mailable);
 
             file_put_contents($cacheFilePath, 'sent');
 
-            $log->info($prefix . ' - BERHASIL dikirim ke: ' . $sentTo, $context);
+            $log->info($prefix . ' - BERHASIL dikirim ke: ' . $sentTo, $context + ['smtp' => $this->smtpSentDetail($sent)]);
             return 'Email berhasil dikirim ke: ' . $sentTo;
         } catch (\Throwable $e) {
             return $this->logMailException($log, $prefix, $context, $e);
@@ -181,6 +181,89 @@ trait SendsApprovalMail
                 fclose($lockHandle);
             }
         }
+    }
+
+    /**
+     * Detail email yang sudah diterima SMTP server: penerima sebenarnya (envelope,
+     * termasuk BCC), Message-ID, dan respon server per perintah (MAIL FROM, RCPT TO, akhir DATA).
+     * Tidak pernah melempar exception agar email yang sudah terkirim tidak dianggap gagal.
+     */
+    protected function smtpSentDetail($sent): array
+    {
+        if ($sent === null) {
+            return ['status' => 'tidak ada SentMessage (pengiriman dibatalkan listener / mailer bukan SMTP)'];
+        }
+
+        try {
+            $message = method_exists($sent, 'getOriginalMessage') ? $sent->getOriginalMessage() : null;
+            $list = function ($addresses) {
+                return array_map(fn($a) => $a->getAddress(), (array) $addresses);
+            };
+
+            $detail = [
+                'message_id' => $sent->getMessageId(),
+                'envelope'   => [
+                    'from'       => $sent->getEnvelope()->getSender()->getAddress(),
+                    'recipients' => $list($sent->getEnvelope()->getRecipients()),
+                ],
+            ];
+
+            if ($message instanceof \Symfony\Component\Mime\Email) {
+                $detail['header'] = [
+                    'to'  => $list($message->getTo()),
+                    'cc'  => $list($message->getCc()),
+                    'bcc' => $list($message->getBcc()),
+                ];
+            }
+
+            $debug = (string) $sent->getDebug();
+            $detail['respon'] = $this->parseSmtpResponses($debug);
+            $detail['transcript'] = $this->redactSmtpDebug($debug);
+
+            return $detail;
+        } catch (\Throwable $e) {
+            return ['status' => 'gagal membaca detail SMTP: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Ambil respon server untuk MAIL FROM, tiap RCPT TO, dan akhir DATA dari transkrip SMTP.
+     */
+    protected function parseSmtpResponses(string $debug): array
+    {
+        $result = ['mail_from' => null, 'rcpt_to' => [], 'data' => null];
+        $lastCmd = null;
+        $lastArg = null;
+        $afterData = false;
+
+        foreach (preg_split('/\r?\n/', $debug) as $line) {
+            $line = preg_replace('/^\[[^\]]*\]\s*/', '', trim($line));
+
+            if (preg_match('/^>\s*(MAIL FROM|RCPT TO|DATA)\b:?\s*(.*)$/i', $line, $m)) {
+                $lastCmd = strtoupper($m[1]);
+                $lastArg = trim($m[2], " <>");
+                continue;
+            }
+
+            if (!preg_match('/^<\s*(\d{3}.*)$/', $line, $m)) {
+                continue;
+            }
+            $response = trim($m[1]);
+
+            if ($lastCmd === 'MAIL FROM') {
+                $result['mail_from'] = $response;
+            } elseif ($lastCmd === 'RCPT TO') {
+                $result['rcpt_to'][$lastArg] = $response;
+            } elseif ($lastCmd === 'DATA' && strpos($response, '354') === 0) {
+                $afterData = true;
+            } elseif ($afterData) {
+                // Respon setelah isi email dikirim, mis. "250 2.0.0 Ok: queued as ABC123"
+                $result['data'] = $response;
+            }
+            $lastCmd = null;
+        }
+
+        return $result;
     }
 
     protected function logMailException($log, string $prefix, array $context, \Throwable $e): string
