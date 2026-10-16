@@ -110,7 +110,7 @@ class CmCloseController extends Controller
                 if (!file_exists($cacheFilePath)) {
                     // Send email
                     Mail::to($email)
-			->bcc('noreply@matahariland.com')
+			        ->bcc('noreply@matahariland.com')
                         ->send(new SendCmCloseMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
 
                     // Mark email as sent

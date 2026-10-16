@@ -74,7 +74,11 @@ trait SendsApprovalMail
 
         $cachePath = $this->mailCachePath($cacheDir, date('Ymd'), 'email_sent_', $meta['cache_key'] ?? []);
 
-        return $this->deliverMail($log, $prefix, $context, [$email], !empty($cc[$email]) ? [$cc[$email]] : [], $cachePath, $mailable);
+        // Key map CC dinormalisasi (lowercase + trim) agar cocok dengan $email
+        $ccMap = array_change_key_case(array_combine(array_map('trim', array_keys($cc)), $cc), CASE_LOWER);
+        $ccTo  = trim((string) ($ccMap[$email] ?? ''));
+
+        return $this->deliverMail($log, $prefix, $context, [$email], $ccTo !== '' ? [$ccTo] : [], $cachePath, $mailable);
     }
 
     /**
@@ -144,6 +148,13 @@ trait SendsApprovalMail
     protected function deliverMail($log, string $prefix, array $context, array $to, array $cc, string $cacheFilePath, $mailable): string
     {
         $lockHandle = null;
+
+        // MAIL_CC_ENABLED=false (dev / testing): CC tidak dikirim, hanya dicatat di log
+        if ($cc && !config('mail.cc.enabled')) {
+            $log->notice($prefix . ' - CC dinonaktifkan (MAIL_CC_ENABLED=false), tidak dikirim ke: ' . implode(', ', $cc), $context);
+            $cc = [];
+        }
+
         $sentTo = implode(', ', $to) . ($cc ? ' & CC ke: ' . implode(', ', $cc) : '');
 
         try {
@@ -167,7 +178,7 @@ trait SendsApprovalMail
             if ($cc) {
                 $mail->cc($cc);
             }
-            $sent = $mail->bcc('noreply@agungintiland.com')->send($mailable);
+            $sent = $mail->send($mailable);
 
             file_put_contents($cacheFilePath, 'sent');
 

@@ -113,4 +113,34 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | BCC Global
+    |--------------------------------------------------------------------------
+    |
+    | Semua email aplikasi di-BCC ke alamat ini. Set MAIL_BCC_ENABLED=false
+    | (mis. di server dev / saat testing) untuk membuang SEMUA BCC dari
+    | setiap email yang dikirim.
+    |
+    */
+
+    'bcc' => [
+        'enabled' => (bool) env('MAIL_BCC_ENABLED', true),
+        'address' => env('MAIL_BCC_ADDRESS', 'noreply@agungintiland.com'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | CC
+    |--------------------------------------------------------------------------
+    |
+    | Set MAIL_CC_ENABLED=false (mis. di server dev / saat testing) untuk
+    | membuang SEMUA CC dari setiap email yang dikirim.
+    |
+    */
+
+    'cc' => [
+        'enabled' => (bool) env('MAIL_CC_ENABLED', true),
+    ],
+
 ];

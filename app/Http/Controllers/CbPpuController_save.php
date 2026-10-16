@@ -118,14 +118,6 @@ class CbPPuController extends Controller
 
                 if (!file_exists($cacheFilePath)) {
                     // Send email
-                    // Mail::to($email)
-                    // ->cc('iwan@matahariland.com')
-                    // ->bcc([
-                    //     'muhamad.zidan@ifca.co.id', 
-                    //     'ahmad.ariffandy@ifca.co.id'
-                    // ]) // Ganti dengan email BCC yang diinginkan
-                    // ->send(new SendCbPpuMail($encryptedData, $dataArray, 'IFCA SOFTWARE - '.$entity_name));
-
                     $mail = Mail::to($email);
 
                     // Tambahkan CC hanya jika email tujuan adalah 'iwan@matahariland.com'
